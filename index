@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JUNTARA POS</title>
+<style>
+:root{--primary:#9b1b30;--secondary:#c0392b;--accent:#e8a000;--bg:#fdf6f0;--text:#2c1810;--green:#27ae60;--danger:#e74c3c;--info:#2980b9;--dark:#2c1810;}
+*{touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
+body{font-family:sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-user-select:none;overflow:hidden;height:100vh;height:100dvh;}
+header{background:var(--primary);color:#fff;padding:0 15px;display:flex;align-items:center;justify-content:space-between;height:55px;flex-shrink:0;}
+.header-left{display:flex;align-items:center;gap:8px;}
+.back-btn{font-size:26px;cursor:pointer;padding:5px;}
+.view{display:none;height:100vh;height:100dvh;width:100vw;flex-direction:column;position:absolute;top:0;left:0;background:var(--bg);}
+.view.active{display:flex;}
+/* 席選択 */
+.grid-tables{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:15px;overflow-y:auto;flex:1;}
+.table-btn{background:#fff;border:2px solid #ddd;padding:12px 5px;text-align:center;border-radius:12px;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,0.08);min-height:85px;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+.table-btn.occupied{background:#fff8f0;border-color:var(--accent);}
+.table-label{font-weight:bold;font-size:16px;}
+.table-sub{font-size:11px;color:#888;margin-top:3px;}
+.price-badge{font-size:11px;color:var(--accent);font-weight:bold;margin-top:4px;}
+/* 客数 */
+.guest-input-container{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:25px;background:#fff;}
+.guest-num-display{font-size:60px;font-weight:bold;margin-bottom:20px;color:var(--primary);background:#f5e6e0;border-radius:15px;padding:15px;width:100%;max-width:400px;text-align:center;}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:430px;margin:0 auto;}
+.key-btn{background:#fff;border:1px solid #ddd;padding:22px 0;font-size:30px;font-weight:bold;border-radius:12px;box-shadow:0 3px 5px rgba(0,0,0,0.08);cursor:pointer;}
+/* メニュー */
+.menu-container{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:95px;background:#f5e6e0;overflow-y:auto;border-right:1px solid #e0c8c0;flex-shrink:0;}
+.cat{padding:18px 6px;font-size:12px;text-align:center;border-bottom:1px solid #e0c8c0;cursor:pointer;color:#666;line-height:1.4;}
+.cat.active{background:#fff;color:var(--primary);font-weight:bold;border-left:5px solid var(--primary);}
+.item-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;align-content:start;background:#fff;padding-bottom:140px;}
+.item-card{background:#fff;border:1px solid #f0e0d8;border-radius:12px;padding:12px;display:flex;flex-direction:column;box-shadow:0 2px 6px rgba(155,27,48,0.07);}
+.item-name{font-size:10px;color:#aaa;line-height:1.4;margin-bottom:2px;}
+.item-en{font-weight:bold;font-size:13px;color:#2c1810;margin-bottom:6px;min-height:1.2em;}
+.item-price{color:var(--accent);font-weight:bold;font-size:14px;margin-bottom:8px;}
+.btn-add{background:var(--primary);color:#fff;border:none;padding:10px 0;border-radius:22px;font-size:14px;font-weight:bold;width:100%;box-shadow:0 3px 6px rgba(155,27,48,0.3);cursor:pointer;}
+footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3px 10px rgba(0,0,0,0.1);flex-shrink:0;}
+.footer-history{background:var(--dark);color:#fff;padding:20px 15px;display:flex;justify-content:space-between;font-size:13px;cursor:pointer;}
+.footer-cart{background:var(--accent);color:#fff;padding:16px 15px;display:flex;justify-content:space-between;font-weight:bold;font-size:17px;cursor:pointer;}
+/* 注文一覧 */
+.list-container{flex:1;overflow-y:auto;background:#fff;padding-bottom:100px;}
+.list-row{display:flex;justify-content:space-between;padding:16px;border-bottom:1px solid #f0e8e4;align-items:center;}
+.summary-area{padding:15px 20px;text-align:right;background:#fff;border-top:2px solid #f0e8e4;flex-shrink:0;line-height:1.7;font-size:14px;}
+.btn-large{width:90%;display:block;margin:10px auto;padding:18px;border:none;border-radius:35px;font-size:18px;font-weight:bold;cursor:pointer;text-align:center;flex-shrink:0;box-shadow:0 4px 10px rgba(0,0,0,0.12);}
+/* 管理画面 */
+.admin-nav{display:flex;background:#fff;border-bottom:1px solid #ddd;flex-shrink:0;overflow-x:auto;}
+.admin-nav-btn{flex:1;min-width:60px;padding:13px 6px;text-align:center;font-size:12px;font-weight:bold;color:#888;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;}
+.admin-nav-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+.sale-card{background:#fff;margin:10px;padding:14px;border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,0.08);border-left:8px solid var(--info);}
+.sale-time-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #f0f0f0;padding-bottom:8px;}
+.sale-time{font-size:17px;font-weight:bold;}
+.sale-table-badge{background:#eee;padding:4px 10px;border-radius:8px;font-size:13px;font-weight:bold;}
+.sale-detail-info{font-size:13px;color:#666;margin-bottom:6px;}
+.sale-total-line{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.sale-price-big{font-size:22px;font-weight:bold;color:var(--primary);}
+.btn-del-sale{background:var(--danger);color:#fff;border:none;padding:6px 12px;border-radius:18px;font-size:11px;cursor:pointer;}
+.report-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #ddd;flex-shrink:0;}
+.btn-report{background:var(--info);color:#fff;border:none;padding:14px 0;border-radius:10px;font-weight:bold;font-size:13px;cursor:pointer;}
+/* モーダル */
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:200;justify-content:center;align-items:center;padding:20px 0;}
+.modal{background:#fff;width:92%;max-width:360px;border-radius:20px;padding:20px;text-align:center;max-height:90dvh;overflow-y:auto;}
+.modal-title{font-weight:bold;font-size:17px;margin-bottom:15px;color:var(--primary);}
+.spice-btn{display:block;width:100%;margin:7px 0;padding:14px;border:2px solid #ddd;border-radius:12px;font-size:16px;font-weight:bold;background:#fff;cursor:pointer;}
+.spice-btn.selected{border-color:var(--primary);background:#fff0f2;color:var(--primary);}
+.naan-btn{display:block;width:100%;margin:6px 0;padding:12px;border:2px solid #ddd;border-radius:10px;font-size:14px;background:#fff;cursor:pointer;text-align:left;}
+.naan-btn.selected{border-color:var(--accent);background:#fff8e0;}
+/* ログイン */
+.login-container{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:25px;background:#fff;}
+.login-input{width:100%;max-width:420px;padding:20px;margin-bottom:16px;border:2px solid #ddd;border-radius:15px;font-size:20px;background:#fafafa;-webkit-appearance:none;}
+.admin-btn{font-size:12px;cursor:pointer;padding:6px 12px;border:1px solid #ffd;border-radius:20px;color:#ffd;background:transparent;white-space:nowrap;}
+/* レシートサンプル */
+.receipt-sample{background:#fff;padding:10px;color:#000;font-family:monospace;text-align:left;font-size:11px;border:1px dashed #ccc;margin-bottom:10px;max-height:200px;overflow-y:auto;}
+.receipt-hr{border-top:1px dashed #000;margin:4px 0;}
+</style>
+</head>
+<body>
+
+<!-- プリンター設定モーダル -->
+<div id="overlay-settings" class="overlay" style="display:none;" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-title">⚙️ Settings</div>
+    <div style="border-top:1px solid #eee;margin:14px 0;padding-top:14px;">
+      <div style="font-size:13px;font-weight:bold;margin-bottom:6px;">🔐 Owner Password</div>
+      <input id="input-owner-current-pass" type="password" placeholder="現在のパスワード"
+        style="width:100%;padding:10px;font-size:15px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;margin-bottom:8px;">
+      <input id="input-owner-pass" type="password" placeholder="新しいパスワード"
+        style="width:100%;padding:10px;font-size:15px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;">
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">※初回設定時は現在のパスワード不要</div>
+    </div>
+    <button onclick="saveSettings()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;">Save</button>
+    <div id="settings-saved" style="text-align:center;color:green;font-size:13px;margin-top:10px;display:none;">✅ Saved!</div>
+    <div style="text-align:center;margin-top:10px;"><span onclick="closeSettings()" style="color:#aaa;font-size:13px;cursor:pointer;">Close</span></div>
+  </div>
+</div>
+
+<!-- 席追加モーダル -->
+<div id="overlay-add-table" class="overlay" style="display:none;">
+  <div class="modal">
+    <div style="font-weight:bold;font-size:17px;margin-bottom:16px;">＋ Add Seat</div>
+    <div style="text-align:left;margin-bottom:8px;font-size:13px;color:#888;">Name (customer name, seat number, etc.)</div>
+    <input id="new-table-name" type="text" placeholder="e.g. Window A, Tanaka..." maxlength="10"
+      style="width:100%;padding:16px;border:2px solid var(--primary);border-radius:12px;font-size:18px;margin-bottom:6px;box-sizing:border-box;-webkit-appearance:none;"
+      oninput="document.getElementById('name-char-count').innerText=this.value.length"
+      onkeydown="if(event.key==='Enter')confirmAddTable()">
+    <div style="text-align:right;font-size:12px;color:#bbb;margin-bottom:16px;"><span id="name-char-count">0</span>/10</div>
+    <button class="btn-large" style="background:var(--primary);color:#fff;margin-bottom:8px;" onclick="confirmAddTable()">Add</button>
+    <div style="color:#bbb;font-size:13px;cursor:pointer;padding:8px;text-align:center;" onclick="closeAddTableModal()">Cancel</div>
+  </div>
+</div>
+
+<!-- 席選択 -->
+<div id="view-index" class="view active">
+  <header>
+    <div class="admin-btn" id="admin-btn-label" onclick="checkAdminAuth()">Sales</div>
+    <div style="font-weight:bold;font-size:17px;letter-spacing:1px;">🍛 JUNTARA</div>
+    <div style="display:flex;gap:14px;align-items:center;">
+      <div style="font-size:20px;cursor:pointer;color:#ffd;" onclick="openSettings()">⚙️</div>
+      <div style="font-size:22px;cursor:pointer;color:#ffd;" onclick="location.reload()">↻</div>
+    </div>
+  </header>
+  <div class="grid-tables" id="table-grid"></div>
+</div>
+
+<!-- ログイン -->
+<div id="view-login" class="view">
+  <header><div class="header-left"><span class="back-btn" onclick="showIndex()">＜</span><span>Login</span></div><span></span></header>
+  <div class="login-container">
+    <div style="font-size:20px;font-weight:bold;margin-bottom:25px;color:var(--primary);">Owner Login</div>
+    <input type="password" id="login-pass-input" class="login-input" placeholder="パスワード">
+    <button class="btn-large" style="background:var(--primary);color:#fff;" onclick="handleLogin()">ログイン</button>
+  </div>
+</div>
+
+<!-- 客数入力 -->
+<div id="view-guest" class="view">
+  <header><div class="header-left"><span class="back-btn" onclick="showIndex()">＜</span><span id="guest-table-name"></span></div><span></span></header>
+  <div class="guest-input-container">
+    <div style="font-size:16px;color:#888;margin-bottom:10px;">Number of guests</div>
+    <div class="guest-num-display"><span id="guest-count-val">0</span> pax</div>
+    <div class="keypad" id="guest-keypad"></div>
+  </div>
+</div>
+
+<!-- メニュー -->
+<div id="view-menu" class="view">
+  <header>
+    <div class="header-left"><span class="back-btn" onclick="showIndex()">＜</span><span id="menu-table-label">Order</span></div>
+    <span style="color:#ffd;font-size:13px;cursor:pointer;" onclick="showOrderHistory()">📋 View</span>
+  </header>
+  <div class="menu-container">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="item-grid" id="item-grid"></div>
+  </div>
+  <footer style="flex-direction:column;gap:0;padding:0;">
+    <div style="display:flex;width:100%;background:var(--primary);padding:8px 12px;box-sizing:border-box;align-items:center;justify-content:space-between;" onclick="showOrderHistory()">
+      <span style="color:#fff;font-size:12px;" id="footer-hist-text">−</span>
+      <span style="color:#ffd;font-size:12px;">▶ View Order</span>
+    </div>
+    <div style="display:flex;width:100%;gap:0;">
+      <div style="flex:1;background:#f5f5f5;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;" onclick="showOrderHistory()">
+        <div style="font-size:11px;color:#888;">Unsent</div>
+        <div style="font-weight:bold;font-size:16px;color:var(--accent);" id="footer-unsent-text">0 items</div>
+      </div>
+      <button id="btn-send-kitchen" onclick="sendToKitchen()" style="flex:2;background:#e74c3c;color:#fff;border:none;font-size:18px;font-weight:bold;padding:14px;cursor:pointer;">
+        🖨️ Send to Kitchen
+      </button>
+    </div>
+  </footer>
+</div>
+
+<!-- 注文一覧（修正画面） -->
+<div id="view-history" class="view">
+  <header><div class="header-left"><span class="back-btn" onclick="backToMenu()">＜</span><span>Order / Edit</span></div><span></span></header>
+  <div class="list-container" id="history-items-list"></div>
+  <div class="summary-area" id="history-summary"></div>
+  <div style="background:#fff;border-top:1px solid #ddd;padding-bottom:10px;">
+    <button class="btn-large" style="background:var(--primary);color:#fff;" onclick="showCheckout()">Checkout →</button>
+    <button class="btn-large" style="background:#e74c3c;color:#fff;" onclick="sendToKitchen()">🖨️ Send to Kitchen</button>
+    <button class="btn-large" style="background:#fff;color:#888;border:1px solid #ddd;" onclick="backToMenu()">← Back to Menu</button>
+  </div>
+</div>
+
+<!-- 会計確定（三船POS準拠） -->
+<div id="view-checkout" class="view">
+  <header><div class="header-left"><span class="back-btn" onclick="showOrderHistory()">＜</span><span>Checkout</span></div><span></span></header>
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 20px 10px;">
+    <!-- 合計表示 -->
+    <div style="padding:30px 20px;background:#fff;border-radius:15px;text-align:center;box-shadow:0 4px 10px rgba(0,0,0,0.1);width:85%;">
+      <div id="checkout-final-total" style="font-size:40px;font-weight:bold;color:var(--primary);">¥0</div>
+      <div id="checkout-final-info" style="color:#666;font-size:12px;"></div>
+    </div>
+    <!-- 支払い方法 -->
+    <div style="width:85%;">
+      <div style="font-size:13px;color:#666;margin-bottom:8px;text-align:center;">Payment Method</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button id="co-pay-btn-cash"   onclick="selectPayment('Cash')"      style="padding:12px;border:2px solid var(--primary);border-radius:10px;background:var(--primary);color:#fff;font-weight:bold;font-size:14px;cursor:pointer;">💴 Cash</button>
+        <button id="co-pay-btn-card"   onclick="selectPayment('Credit')" style="padding:12px;border:2px solid #ddd;border-radius:10px;background:#fff;color:#333;font-weight:bold;font-size:14px;cursor:pointer;">💳 Credit Card</button>
+        <button id="co-pay-btn-qr"     onclick="selectPayment('QR Pay')"    style="padding:12px;border:2px solid #ddd;border-radius:10px;background:#fff;color:#333;font-weight:bold;font-size:14px;cursor:pointer;">📱 QR Pay</button>
+        <button id="co-pay-btn-ic"     onclick="selectPayment('IC/e-Money')" style="padding:12px;border:2px solid #ddd;border-radius:10px;background:#fff;color:#333;font-weight:bold;font-size:14px;cursor:pointer;">🔖 IC / e-Money</button>
+      </div>
+    </div>
+    <!-- 釣銭計算（現金時のみ） -->
+    <div id="change-calc-area" style="width:85%;background:#fff;border-radius:15px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <div style="font-size:13px;color:#666;margin-bottom:10px;text-align:center;">Change Calculator</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <span style="font-size:13px;color:#555;white-space:nowrap;">Received</span>
+        <input id="cash-received" type="number" placeholder="0" oninput="calcChange()" style="flex:1;min-width:0;padding:6px 8px;border:2px solid var(--primary);border-radius:8px;font-size:16px;text-align:right;font-weight:bold;">
+        <span style="font-size:13px;color:#555;white-space:nowrap;">¥</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="quick-cash-btns"></div>
+      <div style="background:#f8f8f8;border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:12px;color:#999;">Change</div>
+        <div id="change-amount" style="font-size:28px;font-weight:bold;color:var(--accent);">-</div>
+      </div>
+    </div>
+  </div>
+  <!-- ボタン群 -->
+  <button class="btn-large" style="background:var(--info);color:#fff;padding:12px;margin:5px auto;" onclick="testPay()">[TEST] Complete</button>
+  <button class="btn-large" style="background:var(--accent);color:#fff;padding:12px;margin:5px auto;" onclick="openReceiptChoice()">🧾 Receipt & Pay</button>
+  <button class="btn-large" style="background:#8e44ad;color:#fff;padding:12px;margin:5px auto;" onclick="openRyoshuusho()">📄 Invoice & Pay</button>
+</div>
+
+<!-- 印刷確認モーダル -->
+<div id="overlay-receipt" class="overlay">
+  <div class="modal">
+    <div id="receipt-preview-area" style="display:none;">
+      <div class="modal-title">印刷プレビュー</div>
+      <div id="sample-receipt-content" class="receipt-sample"></div>
+    </div>
+    <div class="modal-title">Confirm Payment</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <button id="pay-btn-cash"  onclick="selectPayment('Cash')"      style="padding:16px;border:2px solid var(--primary);border-radius:12px;background:var(--primary);color:#fff;font-weight:bold;font-size:15px;cursor:pointer;">💴 Cash</button>
+      <button id="pay-btn-card"  onclick="selectPayment('Credit')" style="padding:16px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#333;font-weight:bold;font-size:15px;cursor:pointer;">💳 Credit Card</button>
+      <button id="pay-btn-qr"    onclick="selectPayment('QR Pay')"    style="padding:16px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#333;font-weight:bold;font-size:15px;cursor:pointer;">📱 QR Pay</button>
+      <button id="pay-btn-ic"    onclick="selectPayment('IC/e-Money')" style="padding:16px;border:2px solid #ddd;border-radius:12px;background:#fff;color:#333;font-weight:bold;font-size:15px;cursor:pointer;">🔖 IC / e-Money</button>
+    </div>
+    <button class="btn-large" style="background:var(--primary);color:#fff;" onclick="pay(true)">🖨️ Print & Complete</button>
+    <button class="btn-large" style="background:#fff;color:#999;border:1px solid #ddd;" onclick="closeReceiptChoice()">Cancel</button>
+  </div>
+</div>
+
+<!-- 管理画面 -->
+<div id="view-admin" class="view">
+  <header>
+    <div class="header-left"><span class="back-btn" onclick="showIndex()">＜</span><span>Sales</span></div>
+    <div style="font-size:12px;color:var(--danger);cursor:pointer;" onclick="logoutOwner()">Logout</div>
+  </header>
+  <div class="admin-nav">
+    <div id="nav-day"   class="admin-nav-btn active" onclick="showAdmin('day')">Today</div>
+    <div id="nav-dates" class="admin-nav-btn" onclick="showAdmin('dates')">Daily</div>
+    <div id="nav-dow"   class="admin-nav-btn" onclick="showAdmin('dow')">By Day</div>
+    <div id="nav-month" class="admin-nav-btn" onclick="showAdmin('month')">Monthly</div>
+    <div id="nav-menu"  class="admin-nav-btn" onclick="showAdmin('menu')">By Item</div>
+  </div>
+  <div id="month-selector-area" style="display:none;align-items:center;gap:10px;background:#fff;padding:10px 15px;border-bottom:1px solid #ddd;flex-shrink:0;">
+    <span style="font-size:13px;color:#666;">Month:</span>
+    <select id="month-selector" onchange="showAdmin(document.querySelector('.admin-nav-btn.active').id.replace('nav-',''))" style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;flex:1;"></select>
+  </div>
+  <div id="admin-summary-area" style="padding:15px;background:var(--dark);color:#fff;display:flex;justify-content:space-around;text-align:center;font-size:13px;flex-shrink:0;">
+    <div>Orders<br><span id="sum-count" style="font-size:20px;font-weight:bold;">0</span></div>
+    <div>Guests<br><span id="sum-guests" style="font-size:20px;font-weight:bold;">0</span></div>
+    <div>Total<br>¥<span id="sum-total" style="font-size:20px;font-weight:bold;">0</span></div>
+  </div>
+  <div id="sales-type-summary-area" style="background:#444;color:#fff;padding:10px 15px;font-size:12px;display:none;flex-wrap:wrap;gap:8px;justify-content:center;flex-shrink:0;"></div>
+  <div id="payment-summary-area" style="background:#555;color:#fff;padding:10px 15px;font-size:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;flex-shrink:0;"></div>
+  <div class="report-btns">
+    <button class="btn-report" onclick="printReport('day')">Daily Report</button>
+    <button class="btn-report" onclick="printReport('month')" style="background:var(--accent);">Monthly</button>
+    <button class="btn-report" onclick="exportCSV()" style="background:#8e44ad;">CSV</button>
+  </div>
+  <div class="list-container" id="sales-list" style="background:#f4f4f4;padding:5px 0;"></div>
+</div>
+
+<!-- 領収書モーダル -->
+<div id="overlay-ryoshuusho" class="overlay">
+  <div class="modal">
+    <div class="modal-title">📄 Invoice</div>
+    <div style="font-size:12px;color:#888;margin-bottom:6px;text-align:left;">Recipient</div>
+    <input type="text" id="ryoshuusho-atena" placeholder="Customer" oninput="updateRyoshuushoPreview()"
+      style="width:100%;padding:12px 15px;border:2px solid #ddd;border-radius:12px;font-size:16px;margin-bottom:12px;box-sizing:border-box;-webkit-appearance:none;">
+    <div style="font-size:12px;color:#888;margin-bottom:6px;text-align:left;">Description</div>
+    <input type="text" id="ryoshuusho-tadashi" placeholder="For dining" oninput="updateRyoshuushoPreview()"
+      style="width:100%;padding:12px 15px;border:2px solid #ddd;border-radius:12px;font-size:16px;margin-bottom:16px;box-sizing:border-box;-webkit-appearance:none;">
+    <div id="ryoshuusho-preview" class="receipt-sample" style="margin-bottom:15px;font-size:12px;"></div>
+    <button class="btn-large" style="background:var(--primary);color:#fff;margin-bottom:8px;" onclick="printRyoshuusho()">🖨️ Print & Complete</button>
+    <div style="color:#aaa;font-size:13px;cursor:pointer;text-align:center;" onclick="closeRyoshuusho()">Cancel</div>
+  </div>
+</div>
+
+<!-- カレーモーダル -->
+<div id="overlay-curry" class="overlay" onclick="if(event.target===this)closeCurryModal()">
+  <div class="modal" id="modal-curry"></div>
+</div>
+
+<!-- UIコア -->
+<script>
+var STORE_ID='juntara';
+
+// ▼ CloudPRNT印刷キュー
+window.queuePrint = async function(jobData) {
+  try {
+    const {addDoc,collection,serverTimestamp} = window._firestoreUtils;
+    await addDoc(collection(window._db, 'stores/juntara/printQueue'), {
+      ...jobData,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+  } catch(e) {
+    console.warn('印刷キュー送信失敗:', e.message);
+    alert('印刷送信に失敗しました');
+  }
+};
+// ▲ CloudPRNT印刷キュー
+
+var TABLES=[
+  {id:'T1',label:'T1',sub:'テーブル'},
+  {id:'T2',label:'T2',sub:'テーブル'},
+  {id:'T3',label:'T3',sub:'テーブル'},
+  {id:'T4',label:'T4',sub:'テーブル'},
+  {id:'C1',label:'C1',sub:'カウンター'},
+  {id:'C2',label:'C2',sub:'カウンター'},
+  {id:'C3',label:'C3',sub:'カウンター'},
+  {id:'C4',label:'C4',sub:'カウンター'},
+  {id:'TO',label:'テイクアウト',sub:'持ち帰り'}
+];
+
+var SPICE_LEVELS=[
+  {id:'no0',ja:'No.0 辛さなし',en:'No.0 No Spice'},
+  {id:'no1',ja:'No.1 甘口',en:'No.1 Mild'},
+  {id:'no2',ja:'No.2 普通',en:'No.2 Medium'},
+  {id:'no5',ja:'No.5 中辛',en:'No.5 Med-Hot'},
+  {id:'no10',ja:'No.10 辛口',en:'No.10 Hot'},
+  {id:'no20',ja:'No.20 激辛',en:'No.20 X-Hot'},
+  {id:'no50',ja:'No.50 超激辛',en:'No.50 XX-Hot'}
+];
+
+var NAAN_OPTIONS=[
+  {id:'plain-naan',ja:'プレーンナン',en:'Plain Naan',price:0},
+  {id:'rice',ja:'ライス',en:'Rice',price:0},
+  {id:'garlic-naan',ja:'ガーリックナン',en:'Garlic Naan',price:300},
+  {id:'cheese-naan',ja:'チーズナン',en:'Cheese Naan',price:300},
+  {id:'kabocha-naan',ja:'かぼちゃナン',en:'Pumpkin Naan',price:300},
+  {id:'bacon-cheese-naan',ja:'ベーコンチーズナン',en:'Bacon Cheese Naan',price:300},
+  {id:'keema-cheese-naan',ja:'キーマチーズナン',en:'Keema Cheese Naan',price:300},
+  {id:'honey-cheese-naan',ja:'はちみつ+チーズナン',en:'Honey & Cheese Naan',price:300},
+  {id:'anko-naan',ja:'あんこナン',en:'Anko Naan',price:300},
+];
+
+var CATEGORIES=[
+  {id:'lunch',label:'LUNCH'},
+  {id:'biryani',label:'BIRYANI'},
+  {id:'choice',label:'CHOICE\nSET'},
+  {id:'curry',label:'CURRY'},
+  {id:'soup',label:'SOUP\nCURRY'},
+  {id:'nan',label:'NAN\nRICE'},
+  {id:'tandoori',label:'TANDOORI'},
+  {id:'side',label:'SIDE'},
+  {id:'drink',label:'DRINK'},
+];
+
+var LUNCH_CURRIES=[
+  {id:'lc1',ja:'チキンカレー',en:'Chicken Curry'},
+  {id:'lc2',ja:'キーマエッグ',en:'Keema Egg'},
+  {id:'lc3',ja:'ダルマサラ',en:'Dal Masala'},
+  {id:'lc4',ja:'ポーク',en:'Pork Curry'},
+  {id:'lc5',ja:'ほうれん草チキン',en:'Palak Chicken'},
+  {id:'lc6',ja:'ポークビンダルー',en:'Pork Vindaloo'},
+  {id:'lc7',ja:'本日のスペシャル',en:"Today's Special"},
+];
+var MENU_ITEMS=[
+  {cat:'lunch',id:'l01',ja:'Aセット',en:'Set A',price:900,isLunchSet:true,rate:0},
+  {cat:'lunch',id:'l02',ja:'Bセット',en:'Set B',price:1050,isLunchSet:true,rate:0},
+  {cat:'lunch',id:'l03',ja:'Cセット',en:'Set C',price:1300,isLunchSet:true,rate:0},
+  {cat:'lunch',id:'l04',ja:'Dセット（スープカレー）',en:'Set D - Soup Curry',price:1200,isLunchSet:true,rate:0},
+  {cat:'biryani',id:'b01',ja:'週替り限定ビリヤニセット',en:'Weekly Biryani Set',price:1750,isBiryaniSet:true,rate:0},
+  {cat:'choice',id:'ch01',ja:'タンドリーチキンセット',en:'Tandoori Chicken Set',price:1650,isChoiceSet:true,choiceType:'tandoori',rate:0},
+  {cat:'choice',id:'ch02',ja:'チーズナン チキンティッカセット',en:'Cheese Naan Tikka Set',price:1750,isChoiceSet:true,choiceType:'tikka',rate:0},
+  {cat:'choice',id:'ch03',ja:'カトマンズセット',en:'Kathmandu Set',price:1350,isChoiceSet:true,choiceType:'kathmandu',rate:0},
+  {cat:'curry',id:'c00',ja:'週替わりおすすめカレー',en:'Weekly Recommendation Curry',price:1200,isCurry:true,rate:0},
+  {cat:'curry',id:'c01',ja:'チキンカレー',en:'Chicken Curry',price:1150,isCurry:true,rate:0},
+  {cat:'curry',id:'c02',ja:'バターチキンカレー',en:'Butter Chicken Curry',price:1250,isCurry:true,rate:0},
+  {cat:'curry',id:'c03',ja:'ほうれん草チキン',en:'Saag Chicken',price:1250,isCurry:true,rate:0},
+  {cat:'curry',id:'c04',ja:'ポークビンダル',en:'Pork Vindaloo',price:1150,isCurry:true,rate:0},
+  {cat:'curry',id:'c05',ja:'野菜カレー',en:'Vegetable Curry',price:1100,isCurry:true,rate:0},
+  {cat:'curry',id:'c06',ja:'ココナッツチキン',en:'Coconut Chicken',price:1350,isCurry:true,rate:0},
+  {cat:'curry',id:'c07',ja:'キーマエッグ',en:'Keema Egg Curry',price:1250,isCurry:true,rate:0},
+  {cat:'curry',id:'c08',ja:'ダルカレー',en:'Dal Curry',price:1150,isCurry:true,rate:0},
+  {cat:'curry',id:'c09',ja:'ポークカレー',en:'Pork Curry',price:1200,isCurry:true,rate:0},
+  {cat:'curry',id:'c10',ja:'ほうれん草ラム',en:'Saag Lamb',price:1450,isCurry:true,rate:0},
+  {cat:'curry',id:'c11',ja:'ラムカレー',en:'Lamb Curry',price:1450,isCurry:true,rate:0},
+  {cat:'curry',id:'c12',ja:'ヤギカレー',en:'Goat Curry',price:1550,isCurry:true,rate:0},
+  {cat:'curry',id:'c13',ja:'カダイチキン',en:'Kadai Chicken',price:1300,isCurry:true,rate:0},
+  {cat:'curry',id:'c14',ja:'ララチキン',en:'Rara Chicken',price:1300,isCurry:true,rate:0},
+  {cat:'curry',id:'c15',ja:'パニールチャトパタ',en:'Paneer Chatpata',price:1300,isCurry:true,rate:0},
+  {cat:'curry',id:'c16',ja:'チキンチーズカレー',en:'Chicken Cheese Curry',price:1300,isCurry:true,rate:0},
+  {cat:'curry',id:'c17',ja:'エビカレー',en:'Ebi Curry',price:1300,isCurry:true,rate:0},
+  {cat:'soup',id:'sc01',ja:'チキンスープカレー',en:'Chicken Soup Curry',price:1200,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc02',ja:'パリパリチキンスープカレー',en:'Paripari Chicken Soup Curry',price:1350,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc03',ja:'納豆キーマスープカレー',en:'Natto Keema Soup Curry',price:1350,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc04',ja:'野菜スープカレー',en:'Vegetables Soup Curry',price:1400,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc05',ja:'エビのスープカレー',en:'Prawn Soup Curry',price:1400,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc06',ja:'ココナッツチキンスープ',en:'Coconut Chicken Soup',price:1450,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc07',ja:'ほうれん草チキンスープ',en:'Horenso Chicken Soup',price:1450,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc08',ja:'ヤギのスープカレー',en:'Goat Soup Curry',price:1600,isSoupCurry:true,rate:0},
+  {cat:'soup',id:'sc09',ja:'生ラムスープカレー',en:'Nama Lamb Soup Curry',price:1850,isSoupCurry:true,rate:0},
+  {cat:'nan',id:'n01',ja:'プレーンナン',en:'Plain Nan',price:350,rate:0},
+  {cat:'nan',id:'n02',ja:'チョコチーズナン',en:'Choco Cheese Nan',price:600,rate:0},
+  {cat:'nan',id:'n03',ja:'チーズナン',en:'Cheese Nan',price:550,rate:0},
+  {cat:'nan',id:'n04',ja:'スパイシーポテトチーズナン',en:'Spicy Potato Cheese Nan',price:550,rate:0},
+  {cat:'nan',id:'n05',ja:'ガーリックナン',en:'Garlic Nan',price:400,rate:0},
+  {cat:'nan',id:'n06',ja:'キーマチーズナン',en:'Keema Cheese Nan',price:550,rate:0},
+  {cat:'nan',id:'n07',ja:'ベーコンチーズナン',en:'Bacon Cheese Nan',price:600,rate:0},
+  {cat:'nan',id:'n08',ja:'はちみつシナモンチーズナン',en:'Honey Cinnamon Cheese Nan',price:600,rate:0},
+  {cat:'nan',id:'n09',ja:'プレーンライス',en:'Plain Rice',price:300,rate:0},
+  {cat:'nan',id:'n10',ja:'ジーラライス',en:'Jeera Rice',price:350,rate:0},
+  {cat:'nan',id:'n11',ja:'ガーリックバターライス',en:'Garlic Butter Rice',price:350,rate:0},
+  {cat:'tandoori',id:'t01',ja:'タンドリーチキン 1P',en:'Tandoori Chicken 1pc',price:600,rate:0},
+  {cat:'tandoori',id:'t02',ja:'チキンティッカ 2P',en:'Chicken Tikka 2pc',price:750,rate:0},
+  {cat:'tandoori',id:'t03',ja:'シークケバブ 1P',en:'Seekh Kebab 1pc',price:400,rate:0},
+  {cat:'tandoori',id:'t04',ja:'ネパールビールセット',en:'Nepali Beer Set',price:850,rate:0},
+  {cat:'side',id:'si01',ja:'ジュンタラスペシャルサラダ',en:'Juntara Special Salad',price:600,rate:0},
+  {cat:'side',id:'si02',ja:'タンドリーチキンサラダ',en:'Tandoori Chicken Salad',price:650,rate:0},
+  {cat:'side',id:'si03',ja:'ネパール餃子モモ 6P',en:'Nepal Momo 6pc',price:650,rate:0},
+  {cat:'side',id:'si04',ja:'サモサ 1P',en:'Samosa 1pc',price:300,rate:0},
+  {cat:'side',id:'si05',ja:'サモサ 2P',en:'Samosa 2pc',price:500,rate:0},
+  {cat:'side',id:'si06',ja:'モモスープ',en:'Momo Soup',price:850,rate:0},
+  {cat:'side',id:'si07',ja:'パパド 3P',en:'Papad 3pc',price:100,rate:0},
+  {cat:'side',id:'si08',ja:'ジラアル',en:'Jeera Aloo',price:600,rate:0},
+  {cat:'drink',id:'dr01',ja:'ネパールビール',en:'Nepali Beer',price:650,rate:0},
+  {cat:'drink',id:'dr02',ja:'定番ビール',en:'Classic Beer',price:600,rate:0},
+  {cat:'drink',id:'dr03',ja:'キリンビール',en:'Kirin Beer',price:600,rate:0},
+  {cat:'drink',id:'dr04',ja:'インドビール',en:'Indian Beer',price:650,rate:0},
+  {cat:'drink',id:'dr05',ja:'ネパールラム',en:'Nepali Rum',price:550,rate:0},
+  {cat:'drink',id:'dr06',ja:'インドウイスキー',en:'Indian Whiskey',price:550,rate:0},
+  {cat:'drink',id:'dr07',ja:'ネパールラム＆コーラ',en:'Nepali Rum & Coke',price:650,rate:0},
+  {cat:'drink',id:'dr08',ja:'ネパールラム＆ラッシー',en:'Plain Rum & Lassi',price:650,rate:0},
+  {cat:'drink',id:'dr09',ja:'ネパールラム＆チャイ',en:'Nepali Rum & Chai',price:650,rate:0},
+  {cat:'drink',id:'dr10',ja:'ワイン',en:'Wine',price:400,rate:0},
+  {cat:'drink',id:'dr11',ja:'レモンサワー',en:'Lemon Sour',price:450,rate:0},
+  {cat:'drink',id:'dr12',ja:'ハイボール',en:'High Ball',price:450,rate:0},
+  {cat:'drink',id:'dr13',ja:'プレーンラッシー',en:'Plain Lassi',price:400,rate:0},
+  {cat:'drink',id:'dr14',ja:'フレーバーラッシー',en:'Flavoured Lassi',price:450,isFlavorLassi:true,rate:0},
+  {cat:'drink',id:'dr15',ja:'チャイ（ホット/アイス）',en:'Chai Hot/Ice',price:400,rate:0},
+  {cat:'drink',id:'dr16',ja:'コーヒー（ホット/アイス）',en:'Coffee Hot/Ice',price:350,rate:0},
+  {cat:'drink',id:'dr17',ja:'コーラ',en:'Cola',price:350,rate:0},
+  {cat:'drink',id:'dr18',ja:'ウーロン茶',en:'Oolong Tea',price:350,rate:0},
+  {cat:'drink',id:'dr19',ja:'オレンジジュース',en:'Orange Juice',price:350,rate:0},
+  {cat:'drink',id:'dr20',ja:'飲み放題 90分～',en:'All You Can Drink 90min',price:2300,rate:0},
+];
+
+var currentTable='';
+var selectedCat='lunch';
+var pendingCurry=null;
+var curryStep=1;
+var selSpice=null,selSize=null,selNaan=null;
+var currentPaymentMethod='Cash';
+
+// ---- 画面遷移 ----
+function showView(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+}
+function showIndex(){showView('view-index');renderIndex();}
+function backToMenu(){showView('view-menu');renderSidebar();renderItems();updateFooter();}
+function showOrderHistory(){showView('view-history');renderHistoryList();}
+function checkAdminAuth(){if(window._fbCurrentUser){showAdmin('day');}else{showView('view-login');}}
+
+var BASE_TABLES=TABLES;
+function getCustomTables(){return JSON.parse(localStorage.getItem('customTables')||'[]');}
+function saveCustomTables(arr){localStorage.setItem('customTables',JSON.stringify(arr));}
+function getAllTables(){return BASE_TABLES.concat(getCustomTables().map(function(n){return{id:n,label:n,sub:'Custom',isCustom:true};}));}
+
+// ---- 席選択 ----
+function renderIndex(){
+  var grid=document.getElementById('table-grid');if(!grid)return;
+  grid.innerHTML='';
+  getAllTables().forEach(function(t){
+    var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+t.id)||'[]');}catch(e){}
+    var occupied=hist.length>0;
+    var guests=localStorage.getItem('guests_'+t.id)||0;
+    var checkin=localStorage.getItem('checkin_'+t.id)||'--:--';
+    var total=0;hist.forEach(function(i){total+=Math.floor(i.price*i.qty*(1+i.rate));});
+    var btn=document.createElement('div');
+    btn.className='table-btn'+(occupied?' occupied':'');
+    var delBtn=t.isCustom?'<div onclick="removeCustomTable(\''+t.id+'\',event)" style="font-size:10px;color:#bbb;margin-top:4px;padding:2px 8px;border:1px solid #eee;border-radius:8px;">✕ Remove</div>':'';
+    btn.innerHTML='<div class="table-label">'+t.label+'</div><div class="table-sub">'+t.sub+'</div>'+
+      (occupied?'<div class="price-badge">'+guests+' pax '+checkin+'<br>¥'+total.toLocaleString()+'</div>':'')+delBtn;
+    (function(tid,tl){btn.onclick=function(e){if(e.target.onclick&&e.target!==btn)return;goToTable(tid,tl,occupied);};})(t.id,t.label);
+    grid.appendChild(btn);
+  });
+  // ＋ボタン
+  var addBtn=document.createElement('div');
+  addBtn.className='table-btn';
+  addBtn.style.cssText='border:2px dashed #ccc;background:transparent;color:#bbb;';
+  addBtn.innerHTML='<span style="font-size:28px;">＋</span><span style="font-size:11px;margin-top:4px;">Add Seat</span>';
+  addBtn.onclick=openAddTableModal;
+  grid.appendChild(addBtn);
+}
+function openAddTableModal(){
+  document.getElementById('new-table-name').value='';
+  document.getElementById('name-char-count').innerText='0';
+  document.getElementById('overlay-add-table').style.display='flex';
+  setTimeout(function(){document.getElementById('new-table-name').focus();},100);
+}
+function closeAddTableModal(){document.getElementById('overlay-add-table').style.display='none';}
+function confirmAddTable(){
+  var name=document.getElementById('new-table-name').value.trim();
+  if(!name){alert('Enter a name');return;}
+  var all=getAllTables().map(function(t){return t.id;});
+  if(all.indexOf(name)>=0){alert('"'+name+'" already exists');return;}
+  var customs=getCustomTables();customs.push(name);saveCustomTables(customs);
+  closeAddTableModal();renderIndex();
+}
+function removeCustomTable(tId,e){
+  e.stopPropagation();
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+tId)||'[]');}catch(ex){}
+  if(hist.length>0){alert('Cannot remove a seat with active orders');return;}
+  if(!confirm('Remove "'+tId+'"?'))return;
+  saveCustomTables(getCustomTables().filter(function(n){return n!==tId;}));
+  localStorage.removeItem('history_'+tId);localStorage.removeItem('guests_'+tId);localStorage.removeItem('checkin_'+tId);
+  renderIndex();
+}
+
+function goToTable(tId,label,occupied){
+  currentTable=tId;
+  document.getElementById('menu-table-label').innerText=label;
+  if(occupied){showView('view-menu');renderSidebar();renderItems();updateFooter();return;}
+  document.getElementById('guest-table-name').innerText=label;
+  document.getElementById('guest-count-val').innerText='0';
+  renderKeypad();showView('view-guest');
+}
+
+// ---- 客数 ----
+function renderKeypad(){
+  var kp=document.getElementById('guest-keypad');kp.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'C',0,'→'].forEach(function(k){
+    var b=document.createElement('button');b.className='key-btn';b.innerText=k;
+    (function(key){b.onclick=function(){
+      var el=document.getElementById('guest-count-val');
+      if(key==='C'){el.innerText='0';}
+      else if(key==='→'){confirmGuests();}
+      else{var v=parseInt(el.innerText)||0;el.innerText=(v===0?key:v.toString()+key);}
+    };})(k);
+    kp.appendChild(b);
+  });
+}
+function confirmGuests(){
+  var n=parseInt(document.getElementById('guest-count-val').innerText)||0;
+  var now=new Date();
+  var t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  localStorage.setItem('guests_'+currentTable,n);
+  localStorage.setItem('checkin_'+currentTable,t);
+  localStorage.setItem('history_'+currentTable,JSON.stringify([]));
+  cloudSync(currentTable);
+  document.getElementById('menu-table-label').innerText=currentTable;
+  showView('view-menu');renderSidebar();renderItems();updateFooter();
+}
+
+// ---- メニュー ----
+function renderSidebar(){
+  var sb=document.getElementById('sidebar');sb.innerHTML='';
+  CATEGORIES.forEach(function(c){
+    var div=document.createElement('div');
+    div.className='cat'+(selectedCat===c.id?' active':'');
+    div.innerHTML=c.label.replace('\n','<br>');
+    (function(cid){div.onclick=function(){selectedCat=cid;renderSidebar();renderItems();};})(c.id);
+    sb.appendChild(div);
+  });
+}
+function renderItems(){
+  var grid=document.getElementById('item-grid');grid.innerHTML='';
+  MENU_ITEMS.filter(function(m){return m.cat===selectedCat;}).forEach(function(item){
+    var card=document.createElement('div');card.className='item-card';
+    var needsModal=item.isCurry||item.isLunchSet||item.isBiryaniSet||item.isChoiceSet||item.isSoupCurry;
+    card.innerHTML='<div class="item-en">'+(item.isCurry?'🌶️ ':item.isLunchSet?'🍱 ':item.isSoupCurry?'🍲 ':'')+item.en+'</div>'+
+      '<div class="item-name">'+item.ja+'</div>'+
+      (item.isLunchSet?'<div style="font-size:10px;color:#aaa;margin-bottom:4px;">Curry + Naan or Rice + Salad + Drink</div>':'')+
+      '<div class="item-price">¥'+item.price.toLocaleString()+'</div>';
+    if(needsModal){
+      var btn=document.createElement('button');btn.className='btn-add';btn.innerText='Select';
+      (function(iid){btn.onclick=function(){addItem(iid);};})(item.id);
+      card.appendChild(btn);
+    }else{
+      // 数量＋/－コントロール
+      var qtyWrap=document.createElement('div');
+      qtyWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-top:6px;';
+      var btnM=document.createElement('button');
+      btnM.style.cssText='width:36px;height:36px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      btnM.innerText='−';
+      var qtyEl=document.createElement('div');
+      qtyEl.style.cssText='font-size:18px;font-weight:bold;min-width:24px;text-align:center;';
+      qtyEl.innerText='1';
+      var btnP=document.createElement('button');
+      btnP.style.cssText='width:36px;height:36px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      btnP.innerText='+';
+      var btnAdd=document.createElement('button');btnAdd.className='btn-add';
+      btnAdd.style.cssText='flex:1;';btnAdd.innerText='Add';
+      btnM.onclick=function(e){e.stopPropagation();var v=parseInt(qtyEl.innerText);if(v>1)qtyEl.innerText=v-1;};
+      btnP.onclick=function(e){e.stopPropagation();var v=parseInt(qtyEl.innerText);qtyEl.innerText=v+1;};
+      (function(it,qe){btnAdd.onclick=function(){
+        var qty=parseInt(qe.innerText)||1;
+        addToHistory(it.ja,it.en,it.price,it.rate,qty);
+        qe.innerText='1';
+        updateFooter();
+      };})(item,qtyEl);
+      qtyWrap.appendChild(btnM);qtyWrap.appendChild(qtyEl);qtyWrap.appendChild(btnP);qtyWrap.appendChild(btnAdd);
+      card.appendChild(qtyWrap);
+    }
+    grid.appendChild(card);
+  });
+}
+function addItem(itemId){
+  var item=null;
+  for(var i=0;i<MENU_ITEMS.length;i++){if(MENU_ITEMS[i].id===itemId){item=MENU_ITEMS[i];break;}}
+  if(!item)return;
+  if(item.isCurry){openCurryModal(item);}
+  else if(item.isLunchSet){openLunchModal(item);}
+  else if(item.isBiryaniSet){openBiryaniModal(item);}
+  else if(item.isChoiceSet){openChoiceModal(item);}
+  else if(item.isSoupCurry){openSoupModal(item);}
+  else if(item.isFlavorLassi){openFlavorLassiModal();}
+  else{addToHistory(item.ja,item.en,item.price,item.rate,1);updateFooter();}
+}
+
+// ---- フレーバーラッシーモーダル ----
+function openFlavorLassiModal(){
+  var modal=document.getElementById('modal-curry');
+  modal.innerHTML='';
+  var h=document.createElement('div');h.className='modal-title';
+  h.innerText='🥛 Flavoured Lassi';modal.appendChild(h);
+  ['マンゴー','いちご','すいか','ブルーベリー','ココナッツ','バナナ'].forEach(function(f){
+    var b=document.createElement('button');b.className='naan-btn';
+    b.innerHTML='<span style="font-weight:bold;">'+f+'</span>'
+      +'<span style="font-size:12px;color:#888;float:right;">¥450</span>';
+    (function(flavor){b.onclick=function(e){
+      e.stopPropagation();
+      addToHistory('フレーバーラッシー '+flavor,'Flavoured Lassi ('+flavor+')',450,0,1);
+      document.getElementById('overlay-curry').style.display='none';
+      updateFooter();
+    };})(f);
+    modal.appendChild(b);
+  });
+  document.getElementById('overlay-curry').style.display='flex';
+}
+
+// ---- スープカレーモーダル ----
+var SOUP_TOPPINGS=[
+  {id:'st1',ja:'中で卵',en:'Boiled Egg',price:150},
+  {id:'st2',ja:'チーズ',en:'Cheese',price:250},
+  {id:'st3',ja:'納豆',en:'Natto',price:150},
+  {id:'st4',ja:'シシカバブ',en:'Shish Kebab',price:350},
+  {id:'st5',ja:'ブロッコリー(4つ)',en:'Broccoli x4',price:100},
+  {id:'st6',ja:'アスパラ(3つ)',en:'Asparagus x3',price:100},
+  {id:'st7',ja:'レンコン(3つ)',en:'Lotus Root x3',price:100},
+  {id:'st8',ja:'ベビーコーン(3つ)',en:'Baby Corn x3',price:100},
+];
+var pendingSoup=null;var selSoupSpice=null;var selSoupNaan=null;
+var selSoupToppings={};var soupStep=1;
+
+function openSoupModal(item){
+  pendingSoup=item;selSoupSpice=null;selSoupNaan=null;selSoupToppings={};soupStep=1;
+  renderSoupModal();
+  document.getElementById('overlay-curry').style.display='flex';
+}
+
+function renderSoupModal(){
+  var modal=document.getElementById('modal-curry');
+  modal.innerHTML='';
+  var titles={1:'🌶️ Spice Level',2:'🍞 Naan or Rice',3:'🍱 Toppings (Optional)'};
+  var h=document.createElement('div');h.className='modal-title';
+  h.innerText=titles[soupStep];
+  modal.appendChild(h);
+  var sub=document.createElement('div');sub.style.cssText='font-size:12px;color:#888;margin-bottom:12px;';
+  sub.innerText=pendingSoup.en;
+  modal.appendChild(sub);
+
+  function addBack(label,step){
+    var bk=document.createElement('div');bk.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk.innerText='← '+label;bk.onclick=function(e){e.stopPropagation();soupStep=step;renderSoupModal();};
+    modal.appendChild(bk);
+  }
+
+  if(soupStep===1){
+    SPICE_LEVELS.forEach(function(s){
+      var b=document.createElement('button');b.className='spice-btn';b.innerText=s.en;
+      (function(sp){b.onclick=function(e){e.stopPropagation();selSoupSpice=sp.id;soupStep=2;renderSoupModal();};})(s);
+      modal.appendChild(b);
+    });
+
+  }else if(soupStep===2){
+    [{id:'naan',ja:'プレーンナン',en:'Plain Naan'},{id:'rice',ja:'ライス',en:'Rice'}].forEach(function(n){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+n.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+n.ja+'</span>'
+        +'<span style="font-size:12px;color:#888;float:right;">Included</span>';
+      (function(nn){b.onclick=function(e){e.stopPropagation();selSoupNaan=nn;soupStep=3;renderSoupModal();};})(n);
+      modal.appendChild(b);
+    });
+    addBack('Change spice',1);
+
+  }else{
+    // トッピング複数選択
+    SOUP_TOPPINGS.forEach(function(t){
+      var selected=!!selSoupToppings[t.id];
+      var b=document.createElement('button');b.className='naan-btn';
+      b.style.cssText=selected?'border:2px solid var(--accent);background:#fff5f5;':'';
+      b.innerHTML='<span style="font-weight:bold;">'+(selected?'✓ ':'')+t.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+t.ja+'</span>'
+        +'<span style="font-size:12px;color:#e67e22;float:right;">+¥'+t.price+'</span>';
+      (function(tp){b.onclick=function(e){
+        e.stopPropagation();
+        if(selSoupToppings[tp.id])delete selSoupToppings[tp.id];
+        else selSoupToppings[tp.id]=tp;
+        renderSoupModal();
+      };})(t);
+      modal.appendChild(b);
+    });
+    var ab=document.createElement('button');ab.className='btn-large';
+    ab.style.cssText='background:var(--primary);color:#fff;margin-top:14px;width:100%;';
+    ab.innerText='Add to Order';
+    ab.onclick=confirmSoupCurry;
+    modal.appendChild(ab);
+    addBack('Change naan/rice',2);
+  }
+}
+
+function confirmSoupCurry(){
+  var spice=SPICE_LEVELS.filter(function(s){return s.id===selSoupSpice;})[0];
+  var toppingKeys=Object.keys(selSoupToppings);
+  var toppingExtra=toppingKeys.reduce(function(s,k){return s+selSoupToppings[k].price;},0);
+  var jaOpt='['+spice.ja+' / '+selSoupNaan.ja+']';
+  var enOpt='['+spice.en+' / '+selSoupNaan.en+']';
+  addToHistory(pendingSoup.ja+' '+jaOpt, pendingSoup.en+' '+enOpt, pendingSoup.price, pendingSoup.rate, 1);
+  toppingKeys.forEach(function(k){
+    var t=selSoupToppings[k];
+    addToHistory('トッピング '+t.ja,'Topping: '+t.en,t.price,0,1);
+  });
+  document.getElementById('overlay-curry').style.display='none';
+  updateFooter();
+}
+
+// ---- チョイスカレーセットモーダル ----
+var CHOICE_CURRIES=[
+  {id:'cc1',ja:'チキンカレー',en:'Chicken Curry'},
+  {id:'cc2',ja:'ポークカレー',en:'Pork Curry'},
+  {id:'cc3',ja:'ポークビンダル',en:'Pork Vindaloo'},
+  {id:'cc4',ja:'キーマエッグ',en:'Keema Egg'},
+  {id:'cc5',ja:'ダルカレー',en:'Dal Curry'},
+  {id:'cc6',ja:'ほうれん草チキン',en:'Palak Chicken'},
+  {id:'cc7',ja:'本日のスペシャル',en:"Today's Special"},
+];
+var CHOICE_NAAN_UPGRADE=[
+  {id:'plain',ja:'プレーンナン（そのまま）',en:'Plain Naan',extra:0},
+  {id:'upgrade',ja:'ナン変更',en:'Naan Upgrade',extra:300},
+];
+var DINNER_DRINKS=[
+  {id:'icecoffee',ja:'アイスコーヒー',en:'Iced Coffee'},
+  {id:'hotcoffee',ja:'ホットコーヒー',en:'Hot Coffee'},
+  {id:'oolong',ja:'烏龍茶',en:'Oolong Tea'},
+  {id:'oj',ja:'オレンジジュース',en:'Orange Juice'},
+  {id:'cola',ja:'コーラ',en:'Cola'},
+];
+
+var pendingChoice=null;
+var selChoiceCurry1=null;var selChoiceCurry2=null;
+var selChoiceNaan=null;var selChoiceNaanUpgrade=null;var selChoiceNaanType=null;
+var choiceStep=1;
+
+function openChoiceModal(item){
+  pendingChoice=item;
+  selChoiceCurry1=null;selChoiceCurry2=null;
+  selChoiceNaan=null;selChoiceNaanUpgrade=null;selChoiceNaanType=null;
+  choiceStep=1;
+  renderChoiceModal();
+  document.getElementById('overlay-curry').style.display='flex';
+}
+
+function renderChoiceModal(){
+  var modal=document.getElementById('modal-curry');
+  modal.innerHTML='';
+  var type=pendingChoice.choiceType;
+  // type: tandoori(カレー×2+ナン/ライス+ナン変更+ドリンク)
+  //       tikka(カレー×1+ナン変更+ドリンク, チーズナン固定)
+  //       kathmandu(カレー×2+ドリンク, ライス固定)
+
+  // ステップ定義
+  // tandoori:  1=カレー1  2=カレー2  3=ナン/ライス  4=ナン変更  5=ドリンク
+  // tikka:     1=カレー1  2=ナン変更  3=ドリンク
+  // kathmandu: 1=カレー1  2=カレー2  3=ドリンク
+
+  var titles={
+    1:'🍛 Select Curry'+(type!=='tikka'?' (1st)':''),
+    2: type==='tandoori'?'🍛 Select Curry (2nd)': type==='tikka'?'🍞 Naan Upgrade?':'🍛 Select Curry (2nd)',
+    3: type==='tandoori'?'🍞 Naan or Rice': type==='tikka'?'🥤 Soft Drink':'🥤 Soft Drink',
+    4: type==='tandoori'?'🍞 Naan Upgrade?':'🥤 Soft Drink',
+    5:'🥤 Soft Drink',
+    6:'🍞 Select Naan (+¥300)',
+  };
+
+  var h=document.createElement('div');h.className='modal-title';
+  h.innerText=titles[choiceStep]||'';
+  modal.appendChild(h);
+
+  // サブタイトル
+  var sub=document.createElement('div');sub.style.cssText='font-size:12px;color:#888;margin-bottom:12px;';
+  var parts=[pendingChoice.en];
+  if(selChoiceCurry1)parts.push(selChoiceCurry1.en);
+  if(selChoiceCurry2)parts.push(selChoiceCurry2.en);
+  if(selChoiceNaan)parts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');
+  sub.innerText=parts.join(' / ');
+  modal.appendChild(sub);
+
+  // カレー選択（重複不可）
+  function renderCurryButtons(onSelect, exclude){
+    CHOICE_CURRIES.forEach(function(c){
+      if(exclude&&exclude.id===c.id)return;
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+c.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+c.ja+'</span>';
+      (function(curry){b.onclick=function(e){e.stopPropagation();onSelect(curry);};})(c);
+      modal.appendChild(b);
+    });
+  }
+
+  function renderDrinkButtons(){
+    DINNER_DRINKS.forEach(function(d){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+d.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+d.ja+'</span>'
+        +'<span style="font-size:12px;color:#888;float:right;">Included</span>';
+      (function(dr){b.onclick=function(e){e.stopPropagation();confirmChoiceSet(dr);};})(d);
+      modal.appendChild(b);
+    });
+  }
+
+  function addBack(label, targetStep){
+    var bk=document.createElement('div');
+    bk.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk.innerText='← '+label;
+    bk.onclick=function(e){e.stopPropagation();choiceStep=targetStep;renderChoiceModal();};
+    modal.appendChild(bk);
+  }
+
+  // --- tandoori ---
+  if(type==='tandoori'){
+    if(choiceStep===1){
+      renderCurryButtons(function(c){selChoiceCurry1=c;choiceStep=2;renderChoiceModal();},null);
+    }else if(choiceStep===2){
+      renderCurryButtons(function(c){selChoiceCurry2=c;choiceStep=3;renderChoiceModal();},selChoiceCurry1);
+      addBack('Change curry 1',1);
+    }else if(choiceStep===3){
+      // プレーンナン・ライス・ナン変更を1画面に
+      [{id:'naan',ja:'プレーンナン',en:'Plain Naan',extra:0},
+       {id:'rice',ja:'ライス',en:'Rice',extra:0}].forEach(function(n){
+        var b=document.createElement('button');b.className='naan-btn';
+        b.innerHTML='<span style="font-weight:bold;">'+n.en+'</span>'
+          +'<span style="font-size:11px;color:#aaa;display:block;">'+n.ja+'</span>'
+          +'<span style="font-size:12px;color:#888;float:right;">Included</span>';
+        (function(nn){b.onclick=function(e){
+          e.stopPropagation();
+          selChoiceNaan=nn.id;selChoiceNaanUpgrade=null;selChoiceNaanType=null;
+          choiceStep=5;renderChoiceModal();
+        };})(n);
+        modal.appendChild(b);
+      });
+      // ナン変更
+      var bUpgrade=document.createElement('button');bUpgrade.className='naan-btn';
+      bUpgrade.innerHTML='<span style="font-weight:bold;">Naan Upgrade</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">ナン変更</span>'
+        +'<span style="font-size:12px;color:#e67e22;float:right;">+¥300</span>';
+      bUpgrade.onclick=function(e){
+        e.stopPropagation();
+        selChoiceNaan='naan';selChoiceNaanUpgrade={id:'upgrade',ja:'ナン変更',en:'Naan Upgrade',extra:300};
+        choiceStep=6;renderChoiceModal();
+      };
+      modal.appendChild(bUpgrade);
+      addBack('Change curry 2',2);
+    }else if(choiceStep===6){
+      // ナン種類選択（+¥300確定後）
+      NAAN_OPTIONS.filter(function(n){return n.price>0;}).forEach(function(n){
+        var b=document.createElement('button');b.className='naan-btn';
+        b.innerHTML='<span style="font-weight:bold;">'+n.en+'</span>'
+          +'<span style="font-size:11px;color:#aaa;display:block;">'+n.ja+'</span>'
+          +'<span style="font-size:12px;color:#e67e22;float:right;">+¥300</span>';
+        (function(nn){b.onclick=function(e){e.stopPropagation();selChoiceNaanType=nn;choiceStep=5;renderChoiceModal();};})(n);
+        modal.appendChild(b);
+      });
+      addBack('Change naan upgrade',4);
+    }else{
+      renderDrinkButtons();
+      addBack('Change naan/rice',3);
+    }
+
+  // --- tikka (チーズナン固定・ナン変更なし) ---
+  }else if(type==='tikka'){
+    if(choiceStep===1){
+      renderCurryButtons(function(c){selChoiceCurry1=c;choiceStep=3;renderChoiceModal();},null);
+    }else{
+      renderDrinkButtons();
+      addBack('Change curry',1);
+    }
+
+  // --- kathmandu (カレー×2・ライス固定・ナン変更なし) ---
+  }else{
+    if(choiceStep===1){
+      renderCurryButtons(function(c){selChoiceCurry1=c;choiceStep=2;renderChoiceModal();},null);
+    }else if(choiceStep===2){
+      renderCurryButtons(function(c){selChoiceCurry2=c;choiceStep=3;renderChoiceModal();},selChoiceCurry1);
+      addBack('Change curry 1',1);
+    }else{
+      renderDrinkButtons();
+      addBack('Change curry 2',2);
+    }
+  }
+}
+
+function confirmChoiceSet(drink){
+  var type=pendingChoice.choiceType;
+  var extra=selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0?selChoiceNaanUpgrade.extra:0;
+  var parts=[];
+  var enParts=[];
+  if(selChoiceCurry1){parts.push(selChoiceCurry1.ja);enParts.push(selChoiceCurry1.en);}
+  if(selChoiceCurry2){parts.push(selChoiceCurry2.ja);enParts.push(selChoiceCurry2.en);}
+  if(type==='tandoori'){parts.push(selChoiceNaan==='naan'?'プレーンナン':'ライス');enParts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');}
+  else if(type==='tikka'){parts.push('チーズナン');enParts.push('Cheese Naan');}
+  else{parts.push('ライス');enParts.push('Rice');}
+  if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
+    parts.push((selChoiceNaanType?selChoiceNaanType.ja:'ナン変更')+' +¥300');
+    enParts.push((selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade')+' +¥300');
+  }
+  parts.push(drink.ja);
+  enParts.push(drink.en);
+  var jaOpt='['+parts.join(' / ')+']';
+  var enOpt='['+enParts.join(' / ')+']';
+  addToHistory(pendingChoice.ja+' '+jaOpt, pendingChoice.en+' '+enOpt, pendingChoice.price+extra, pendingChoice.rate, 1);
+  document.getElementById('overlay-curry').style.display='none';
+  updateFooter();
+}
+
+// ---- ビリヤニセットモーダル ----
+var BIRYANI_DRINKS=[
+  {id:'oj',ja:'オレンジジュース',en:'Orange Juice'},
+  {id:'oolong',ja:'ウーロン茶',en:'Oolong Tea'},
+  {id:'lassi',ja:'プレーンラッシー',en:'Plain Lassi'},
+  {id:'chai',ja:'アイスチャイ',en:'Iced Chai'},
+];
+var pendingBiryani=null;var selBiryaniSpice=null;var selBiryaniSize=null;var biryaniStep=1;
+
+function openBiryaniModal(item){
+  pendingBiryani=item;selBiryaniSpice=null;selBiryaniSize=null;biryaniStep=2;
+  renderBiryaniModal();
+  document.getElementById('overlay-curry').style.display='flex';
+}
+
+function renderBiryaniModal(){
+  var modal=document.getElementById('modal-curry');
+  modal.innerHTML='';
+
+  var titles=['','🌶️ Spice Level','🍚 Biryani Size','🥤 Soft Drink'];
+  var h=document.createElement('div');h.className='modal-title';
+  h.innerText=titles[biryaniStep];
+  modal.appendChild(h);
+
+  var sub=document.createElement('div');sub.style.cssText='font-size:12px;color:#888;margin-bottom:12px;';
+  var parts=[pendingBiryani.en];
+  if(selBiryaniSpice){var sp=SPICE_LEVELS.filter(function(s){return s.id===selBiryaniSpice;})[0];if(sp)parts.push(sp.en);}
+  if(selBiryaniSize)parts.push(selBiryaniSize==='large'?'Large +¥200':'Regular');
+  sub.innerText=parts.join(' — ');
+  modal.appendChild(sub);
+
+  if(biryaniStep===1){
+    // 辛さ選択
+    SPICE_LEVELS.forEach(function(s){
+      var b=document.createElement('button');b.className='spice-btn';b.innerText=s.en;
+      (function(sp){b.onclick=function(e){
+        e.stopPropagation();selBiryaniSpice=sp.id;biryaniStep=2;renderBiryaniModal();
+      };})(s);
+      modal.appendChild(b);
+    });
+
+  }else if(biryaniStep===2){
+    // サイズ選択
+    [
+      {id:'regular',ja:'普通',en:'Regular',extra:0},
+      {id:'large',ja:'大盛り',en:'Large',extra:200},
+    ].forEach(function(sz){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+sz.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+sz.ja+'</span>'
+        +(sz.extra>0?'<span style="font-size:12px;color:#e67e22;float:right;">+¥'+sz.extra+'</span>':'<span style="font-size:12px;color:#888;float:right;">¥1,750</span>');
+      (function(s){b.onclick=function(e){
+        e.stopPropagation();selBiryaniSize=s.id;biryaniStep=3;renderBiryaniModal();
+      };})(sz);
+      modal.appendChild(b);
+    });
+    var bk=document.createElement('div');bk.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk.innerText='← Change spice';
+    bk.onclick=function(e){e.stopPropagation();biryaniStep=1;renderBiryaniModal();};
+    modal.appendChild(bk);
+
+  }else{
+    // ドリンク選択
+    BIRYANI_DRINKS.forEach(function(d){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+d.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+d.ja+'</span>'
+        +'<span style="font-size:12px;color:#888;float:right;">Included</span>';
+      (function(dr){b.onclick=function(e){
+        e.stopPropagation();confirmBiryaniSet(dr);
+      };})(d);
+      modal.appendChild(b);
+    });
+    var bk2=document.createElement('div');bk2.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk2.innerText='← Change size';
+    bk2.onclick=function(e){e.stopPropagation();biryaniStep=2;renderBiryaniModal();};
+    modal.appendChild(bk2);
+  }
+}
+
+function confirmBiryaniSet(drink){
+  var extra=selBiryaniSize==='large'?200:0;
+  var sizeJa=selBiryaniSize==='large'?'大盛り':'普通';
+  var sizeEn=selBiryaniSize==='large'?'Large':'Regular';
+  var jaOpt='['+sizeJa+' / '+drink.ja+']';
+  var enOpt='['+sizeEn+' / '+drink.en+']';
+  addToHistory(pendingBiryani.ja+' '+jaOpt, pendingBiryani.en+' '+enOpt, pendingBiryani.price+extra, pendingBiryani.rate, 1);
+  document.getElementById('overlay-curry').style.display='none';
+  updateFooter();
+}
+
+// ---- ランチセットモーダル ----
+var pendingLunch=null;var selLunchCurry=null;var selLunchSpice=null;var selLunchNaan=null;
+var lunchStep=1;
+
+// ランチ用ナン・ライス選択（A・B・Dセット）
+var LUNCH_NAAN=[
+  {id:'plain-naan',ja:'プレーンナン',en:'Plain Naan'},
+  {id:'rice',ja:'ライス',en:'Rice'},
+];
+
+// ソフトドリンク
+var LUNCH_DRINKS=[
+  {id:'oj',ja:'オレンジジュース',en:'Orange Juice',price:0},
+  {id:'cola',ja:'コーラ',en:'Coca Cola',price:0},
+  {id:'coffee',ja:'アイスコーヒー',en:'Iced Coffee',price:0},
+  {id:'oolong',ja:'ウーロン茶',en:'Oolong Tea',price:0},
+  {id:'lassi',ja:'プレーンラッシー',en:'Plain Lassi',price:100},
+  {id:'chai',ja:'アイスチャイ',en:'Iced Chai',price:100},
+];
+
+function openLunchModal(item){
+  pendingLunch=item;selLunchCurry=null;selLunchSpice=null;selLunchNaan=null;lunchStep=1;
+  // Dセットはカレー選択なし → step1をナン選択に
+  if(item.id==='l04'){lunchStep=3;}
+  renderLunchModal();
+  document.getElementById('overlay-curry').style.display='flex';
+}
+
+function renderLunchModal(){
+  var modal=document.getElementById('modal-curry');
+  modal.innerHTML='';
+
+  // セット種別判定
+  var hasNaanStep = pendingLunch.id==='l01'||pendingLunch.id==='l02'||pendingLunch.id==='l04';
+  var hasCurryStep = pendingLunch.id!=='l04';
+  var cheeseNaan = pendingLunch.id==='l03';
+
+  // タイトル
+  var h=document.createElement('div');h.className='modal-title';
+  if(lunchStep===1) h.innerText='🍱 Select Curry';
+  else if(lunchStep===2) h.innerText='🌶️ Spice Level';
+  else if(lunchStep===3) h.innerText='🍞 Naan or Rice';
+  else h.innerText='🥤 Soft Drink';
+  modal.appendChild(h);
+
+  // サブタイトル
+  var sub=document.createElement('div');
+  sub.style.cssText='font-size:12px;color:#888;margin-bottom:12px;';
+  var subParts=[pendingLunch.en];
+  if(selLunchCurry) subParts.push(selLunchCurry.en);
+  if(selLunchNaan) subParts.push(selLunchNaan.en);
+  sub.innerText=subParts.join(' — ');
+  modal.appendChild(sub);
+
+  if(lunchStep===1){
+    // カレー選択
+    LUNCH_CURRIES.forEach(function(c){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+c.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+c.ja+'</span>';
+      (function(curry){b.onclick=function(e){
+        e.stopPropagation();selLunchCurry=curry;lunchStep=2;renderLunchModal();
+      };})(c);
+      modal.appendChild(b);
+    });
+
+  }else if(lunchStep===2){
+    // 辛さ選択
+    SPICE_LEVELS.forEach(function(s){
+      var b=document.createElement('button');b.className='spice-btn';b.innerText=s.en;
+      (function(sp){b.onclick=function(e){
+        e.stopPropagation();selLunchSpice=sp.id;
+        if(hasNaanStep){lunchStep=3;renderLunchModal();}
+        else if(cheeseNaan){selLunchNaan={id:'cheese-naan',ja:'チーズナン',en:'Cheese Naan'};lunchStep=4;renderLunchModal();}
+        else{lunchStep=4;renderLunchModal();}
+      };})(s);
+      modal.appendChild(b);
+    });
+    var bk=document.createElement('div');bk.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk.innerText='← Change curry';
+    bk.onclick=function(e){e.stopPropagation();lunchStep=1;renderLunchModal();};
+    modal.appendChild(bk);
+
+  }else if(lunchStep===3){
+    // ナン・ライス選択
+    LUNCH_NAAN.forEach(function(n){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+n.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+n.ja+'</span>';
+      (function(nn){b.onclick=function(e){
+        e.stopPropagation();selLunchNaan=nn;lunchStep=4;renderLunchModal();
+      };})(n);
+      modal.appendChild(b);
+    });
+    if(hasCurryStep){
+      var bk2=document.createElement('div');bk2.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+      bk2.innerText='← Change spice';
+      bk2.onclick=function(e){e.stopPropagation();lunchStep=2;renderLunchModal();};
+      modal.appendChild(bk2);
+    }
+
+  }else{
+    // ドリンク選択
+    LUNCH_DRINKS.forEach(function(d){
+      var b=document.createElement('button');b.className='naan-btn';
+      b.innerHTML='<span style="font-weight:bold;">'+d.en+'</span>'
+        +'<span style="font-size:11px;color:#aaa;display:block;">'+d.ja+'</span>'
+        +(d.price>0?'<span style="font-size:12px;color:#e67e22;float:right;">+¥'+d.price+'</span>':'<span style="font-size:12px;color:#888;float:right;">Included</span>');
+      (function(dr){b.onclick=function(e){
+        e.stopPropagation();confirmLunchSet(dr);
+      };})(d);
+      modal.appendChild(b);
+    });
+    var bk3=document.createElement('div');bk3.style.cssText='color:#aaa;font-size:13px;margin-top:12px;cursor:pointer;text-align:center;';
+    bk3.innerText='← Change naan/rice';
+    bk3.onclick=function(e){
+      e.stopPropagation();
+      lunchStep = (hasNaanStep||cheeseNaan) ? 3 : 2;
+      if(pendingLunch.id==='l04') lunchStep=3;
+      renderLunchModal();
+    };
+    modal.appendChild(bk3);
+  }
+}
+
+function confirmLunchSet(drink){
+  var spice=null;
+  if(pendingLunch.id!=='l04'){
+    for(var i=0;i<SPICE_LEVELS.length;i++){if(SPICE_LEVELS[i].id===selLunchSpice){spice=SPICE_LEVELS[i];break;}}
+    if(!spice)return;
+  }
+  var naanJa=selLunchNaan?selLunchNaan.ja:'';
+  var naanEn=selLunchNaan?selLunchNaan.en:'';
+  var spiceJa=spice?spice.ja:'';
+  var spiceEn=spice?spice.en:'';
+  var curryJa=selLunchCurry?selLunchCurry.ja:'';
+  var curryEn=selLunchCurry?selLunchCurry.en:'';
+
+  var jaOpt='['+(curryJa?curryJa+' ':'')+(spiceJa?spiceJa+' / ':'')+naanJa+(drink?' / '+drink.ja:'')+']';
+  var enOpt='['+(curryEn?curryEn+' / ':'')+spiceEn+(naanEn?' / '+naanEn:'')+(drink?' / '+drink.en:'')+']';
+
+  // ドリンクがラッシー/チャイなら追加料金
+  var totalPrice=pendingLunch.price+(drink&&drink.price>0?drink.price:0);
+  addToHistory(pendingLunch.ja+' '+jaOpt, pendingLunch.en+' '+enOpt, totalPrice, pendingLunch.rate, 1);
+  document.getElementById('overlay-curry').style.display='none';
+  updateFooter();
+}
+// ---- カレーモーダル ----
+function openCurryModal(item){
+  pendingCurry=item;curryStep=1;selSpice=null;selSize=null;selNaan=null;
+  renderCurryModal();document.getElementById('overlay-curry').style.display='flex';
+}
+function openSettings(){
+
+  document.getElementById('input-owner-current-pass').value='';
+  document.getElementById('input-owner-pass').value='';
+  document.getElementById('settings-saved').style.display='none';
+  document.getElementById('overlay-settings').style.display='flex';
+}
+function saveSettings(){
+
+  var pw=document.getElementById('input-owner-pass').value.trim();
+  if(pw){
+    var cur=document.getElementById('input-owner-current-pass').value.trim();
+    var saved=localStorage.getItem('ownerPass')||'';
+    if(saved&&cur!==saved){alert('現在のパスワードが違います');return;}
+    localStorage.setItem('ownerPass',pw);
+  }
+  document.getElementById('settings-saved').style.display='block';
+}
+function closeSettings(){document.getElementById('overlay-settings').style.display='none';}
+function closeCurryModal(){document.getElementById('overlay-curry').style.display='none';}
+function renderCurryModal(){
+  var modal=document.getElementById('modal-curry');modal.innerHTML='';
+  var h=document.createElement('div');h.className='modal-title';modal.appendChild(h);
+  if(curryStep===1){
+    h.innerText='🌶️ Spice Level';
+    var sub=document.createElement('div');sub.style.cssText='font-size:13px;color:#888;margin-bottom:10px;';sub.innerText=pendingCurry.en;modal.appendChild(sub);
+    SPICE_LEVELS.forEach(function(s){
+      var b=document.createElement('button');b.className='spice-btn'+(selSpice===s.id?' selected':'');b.innerText=s.ja;
+      (function(sid){b.onclick=function(){selSpice=sid;curryStep=2;renderCurryModal();};})(s.id);
+      modal.appendChild(b);
+    });
+  }else if(curryStep===2){
+    h.innerText='🍛 Size';
+    ['Regular','Large (+¥300)'].forEach(function(s,i){
+      var b=document.createElement('button');b.className='spice-btn';b.innerText=s;
+      (function(idx){b.onclick=function(){selSize=idx===0?'普通':'大盛り';curryStep=3;renderCurryModal();};})(i);
+      modal.appendChild(b);
+    });
+    var bk=document.createElement('div');bk.style.cssText='color:#aaa;font-size:13px;margin-top:10px;cursor:pointer;';bk.innerText='← Change spice level';
+    bk.onclick=function(){curryStep=1;renderCurryModal();};modal.appendChild(bk);
+  }else{
+    h.innerText='🍞 Naan / Rice';
+    NAAN_OPTIONS.forEach(function(n){
+      var b=document.createElement('button');b.className='naan-btn'+(selNaan===n.id?' selected':'');
+      b.innerHTML='<span style="font-weight:bold;">'+n.en+'</span><span style="font-size:11px;color:#aaa;display:block;">'+n.ja+'</span><span style="font-size:12px;color:#888;float:right;margin-top:-28px;">'+(n.price===0?'Included':'+¥'+n.price)+'</span>';
+      (function(nid){b.onclick=function(){selNaan=nid;renderCurryModal();};})(n.id);
+      modal.appendChild(b);
+    });
+    if(selNaan){
+      var ab=document.createElement('button');ab.className='btn-large';
+      ab.style.cssText='background:var(--primary);color:#fff;margin-top:12px;';
+      ab.innerText='Add to Order';ab.onclick=confirmCurry;modal.appendChild(ab);
+    }
+    var bk=document.createElement('div');bk.style.cssText='color:#aaa;font-size:13px;margin-top:8px;cursor:pointer;';bk.innerText='← Change size';
+    bk.onclick=function(){curryStep=2;renderCurryModal();};modal.appendChild(bk);
+  }
+}
+function confirmCurry(){
+  var spice=null,naan=null;
+  for(var i=0;i<SPICE_LEVELS.length;i++){if(SPICE_LEVELS[i].id===selSpice){spice=SPICE_LEVELS[i];break;}}
+  for(var i=0;i<NAAN_OPTIONS.length;i++){if(NAAN_OPTIONS[i].id===selNaan){naan=NAAN_OPTIONS[i];break;}}
+  var extra=selSize==='大盛り'?300:0;
+  var total=pendingCurry.price+extra+naan.price;
+  var sizeJa=selSize==='大盛り'?' 大盛り':'';
+  var sizeEn=selSize==='大盛り'?' Large':'';
+  var jaName=pendingCurry.ja+sizeJa;
+  var enName=pendingCurry.en+' '+spice.en+sizeEn;
+  addToHistory(jaName, enName, total, pendingCurry.rate, 1);
+  addToHistory(naan.ja, naan.en, 0, pendingCurry.rate, 1);
+  closeCurryModal();
+}
+
+// ---- カート ----
+function addToHistory(ja,en,price,rate,qty){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var key=ja+'__'+price;var found=false;
+  for(var i=0;i<hist.length;i++){if(hist[i].key===key&&!hist[i].sent){hist[i].qty+=qty;found=true;break;}}
+  if(!found){hist.push({key:key,ja:ja,en:en,name:ja,price:price,rate:rate||0,qty:qty,sent:false});}
+  localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
+  cloudSync(currentTable);updateFooter();
+}
+function updateFooter(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var unsentCnt=0,unsentTotal=0,totalAll=0,sentCnt=0;
+  hist.forEach(function(i){
+    totalAll+=i.price*i.qty;
+    if(!i.sent){unsentCnt+=i.qty;unsentTotal+=i.price*i.qty;}
+    else{sentCnt+=i.qty;}
+  });
+  var fu=document.getElementById('footer-unsent-text');
+  if(fu){
+    if(unsentCnt>0){fu.innerText=unsentCnt+' items  ¥'+unsentTotal.toLocaleString();fu.style.color='var(--accent)';}
+    else{fu.innerText='なし';fu.style.color='#aaa';}
+  }
+  var btn=document.getElementById('btn-send-kitchen');
+  if(btn)btn.style.background=unsentCnt>0?'#e74c3c':'#bbb';
+  var fh=document.getElementById('footer-hist-text');
+  if(fh){
+    var g=localStorage.getItem('guests_'+currentTable)||0;
+    var ci=localStorage.getItem('checkin_'+currentTable)||'--:--';
+    fh.innerText=currentTable+' / '+g+' pax / IN '+ci+'  Sent:'+sentCnt+' Total: ¥'+totalAll.toLocaleString();
+  }
+}
+
+// ---- 注文一覧（修正） ----
+function renderHistoryList(){
+  var list=document.getElementById('history-items-list');
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  list.innerHTML='';
+  var total=0;
+  function makeSection(label,color,items,canEdit){
+    if(items.length===0)return;
+    var sec=document.createElement('div');
+    sec.style.cssText='padding:8px 12px 4px;font-size:12px;font-weight:bold;color:'+color+';background:#f9f9f9;border-top:2px solid '+color+';';
+    sec.innerText=label;list.appendChild(sec);
+    items.forEach(function(item){
+      var idx=hist.indexOf(item);
+      var lineTotal=item.price*item.qty;total+=lineTotal;
+      var row=document.createElement('div');row.className='list-row';
+      row.style.cssText=item.sent?'opacity:0.6;':'';
+      row.innerHTML='<div style="flex:1">'+
+        '<div style="font-weight:bold;font-size:14px;">'+item.en+'</div>'+
+        '<div style="font-size:10px;color:#bbb;">'+item.ja+'</div>'+
+        '<div style="font-size:12px;color:#aaa;">¥'+item.price.toLocaleString()+' × '+item.qty+'</div></div>'+
+        '<div style="text-align:right;">'+
+        '<div style="font-weight:bold;">¥'+lineTotal.toLocaleString()+'</div>'+
+        (canEdit?'<div style="display:flex;gap:6px;margin-top:6px;">'+
+        '<button style="padding:6px 12px;border-radius:15px;border:1px solid #ddd;background:#fff;font-size:18px;" onclick="changeQty('+idx+',-1)">−</button>'+
+        '<button style="padding:6px 12px;border-radius:15px;border:1px solid #ddd;background:#fff;font-size:18px;" onclick="changeQty('+idx+',1)">＋</button>'+
+        '</div>':'')+
+        '</div>';
+      list.appendChild(row);
+    });
+  }
+  var unsent=hist.filter(function(i){return !i.sent;});
+  var sent=hist.filter(function(i){return i.sent;});
+  makeSection('📝 Unsent','#e74c3c',unsent,true);
+  makeSection('✅ Sent','#27ae60',sent,false);
+  document.getElementById('history-summary').innerHTML=
+    '<strong style="font-size:22px;">Total (tax incl.): ¥'+total.toLocaleString()+'</strong>';
+}
+function changeQty(idx,delta){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  hist[idx].qty+=delta;if(hist[idx].qty<=0)hist.splice(idx,1);
+  localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
+  cloudSync(currentTable);renderHistoryList();updateFooter();
+}
+
+// ---- 会計（三船POS準拠） ----
+function showCheckout(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  if(hist.length===0){alert('No items in order');return;}
+  var total=hist.reduce(function(s,i){return s+Math.floor(i.price*i.qty*(1+i.rate));},0);
+  document.getElementById('checkout-final-total').innerText='¥'+total.toLocaleString();
+  document.getElementById('checkout-final-info').innerText=
+    'In: '+(localStorage.getItem('checkin_'+currentTable)||'--:--')+
+    ' / Guests: '+(localStorage.getItem('guests_'+currentTable)||0);
+  showView('view-checkout');
+  selectPayment('Cash');
+  buildQuickCashBtns(total);
+}
+
+var currentPaymentMethod='Cash';
+function selectPayment(method){
+  currentPaymentMethod=method;
+  var map={'Cash':'cash','Credit':'card','QR Pay':'qr','IC/e-Money':'ic'};
+  ['cash','card','qr','ic'].forEach(function(k){
+    ['co-pay-btn-','pay-btn-'].forEach(function(prefix){
+      var btn=document.getElementById(prefix+k);
+      if(!btn)return;
+      var sel=(map[method]===k);
+      btn.style.background=sel?'var(--primary)':'#fff';
+      btn.style.color=sel?'#fff':'#333';
+      btn.style.borderColor=sel?'var(--primary)':'#ddd';
+    });
+  });
+  var calcArea=document.getElementById('change-calc-area');
+  if(calcArea){
+    calcArea.style.display=method==='Cash'?'block':'none';
+    if(method==='Cash'){
+      document.getElementById('cash-received').value='';
+      document.getElementById('change-amount').innerText='-';
+    }
+  }
+}
+function buildQuickCashBtns(total){
+  var presets=[1000,2000,5000,10000];
+  document.getElementById('quick-cash-btns').innerHTML=presets.map(function(v){
+    return '<button onclick="document.getElementById(\'cash-received\').value='+v+';calcChange();" '+
+      'style="flex:1;padding:10px 0;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:13px;font-weight:bold;cursor:pointer;color:var(--info);">¥'+v.toLocaleString()+'</button>';
+  }).join('');
+}
+function calcChange(){
+  var total=parseInt(document.getElementById('checkout-final-total').innerText.replace(/[¥,]/g,''))||0;
+  var received=parseInt(document.getElementById('cash-received').value)||0;
+  var change=received-total;
+  var el=document.getElementById('change-amount');
+  if(received===0){el.innerText='-';el.style.color='var(--accent)';}
+  else if(change<0){el.innerText='¥'+Math.abs(change).toLocaleString()+' short';el.style.color='red';}
+  else{el.innerText='¥'+change.toLocaleString();el.style.color='var(--accent)';}
+}
+
+// テスト会計（印刷なし）
+function testPay(){
+  if(window._saveSaleToCloud)window._saveSaleToCloud(currentTable,currentPaymentMethod);
+  localStorage.removeItem('history_'+currentTable);
+  localStorage.removeItem('guests_'+currentTable);
+  localStorage.removeItem('checkin_'+currentTable);
+  showIndex();
+}
+
+// 本番会計モーダル
+function openReceiptChoice(){
+  document.getElementById('overlay-receipt').style.display='flex';
+}
+function closeReceiptChoice(){document.getElementById('overlay-receipt').style.display='none';}
+
+// 印刷して完了
+async function pay(doPrint){
+  closeReceiptChoice();
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var g=localStorage.getItem('guests_'+currentTable)||0;
+  var c=localStorage.getItem('checkin_'+currentTable)||'--:--';
+  if(window._saveSaleToCloud)await window._saveSaleToCloud(currentTable,currentPaymentMethod);
+  if(doPrint){
+    var cashReceived=currentPaymentMethod==='Cash'?parseInt(document.getElementById('cash-received').value)||0:0;
+    await window.queuePrint({
+      type:'receipt',
+      tableNo:currentTable,
+      guests:g,
+      checkinTime:c,
+      items:hist.map(function(i){return{name:i.ja,qty:i.qty,price:i.price,rate:i.rate||0};}),
+      paymentMethod:currentPaymentMethod,
+      cashReceived:cashReceived,
+      orderTime:new Date().toLocaleString('ja-JP')
+    });
+  }
+  localStorage.removeItem('history_'+currentTable);
+  localStorage.removeItem('guests_'+currentTable);
+  localStorage.removeItem('checkin_'+currentTable);
+  showIndex();
+}
+
+// ---- キッチン印刷 ----
+async function sendToKitchen(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var unsent=hist.filter(function(i){return !i.sent;});
+  if(unsent.length===0){alert('No unsent orders');return;}
+  var now=new Date();
+  var t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  var sentCount=hist.filter(function(i){return i.sent;}).reduce(function(s,i){return s+i.qty;},0);
+  var isAdditional=sentCount>0;
+  for(var i=0;i<unsent.length;i++){
+    await window.queuePrint({
+      type:'kitchen',tableId:currentTable,tag:'H',time:t,
+      isAdditional:isAdditional,itemName:unsent[i].en,itemQty:unsent[i].qty
+    });
+  }
+  hist.forEach(function(i){if(!i.sent)i.sent=true;});
+  localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
+  cloudSync(currentTable);updateFooter();
+  var btn=document.getElementById('btn-send-kitchen');
+  if(btn){btn.innerText='✅ Sent!';btn.style.background='#27ae60';
+    setTimeout(function(){btn.innerText='🖨️ Send to Kitchen';updateFooter();},1500);}
+}
+function printKitchen(){sendToKitchen();}
+
+// sendToPrinter removed (CloudPRNT)
+
+// ---- 領収書 ----
+function openRyoshuusho(){
+  document.getElementById('ryoshuusho-atena').value='';
+  document.getElementById('ryoshuusho-tadashi').value='For dining';
+  updateRyoshuushoPreview();
+  document.getElementById('overlay-ryoshuusho').style.display='flex';
+}
+function closeRyoshuusho(){document.getElementById('overlay-ryoshuusho').style.display='none';}
+function getRyoshuushoTotal(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var total=0;
+  hist.forEach(function(i){total+=i.price*i.qty;});
+  return{total:total};
+}
+function updateRyoshuushoPreview(){
+  var atena=document.getElementById('ryoshuusho-atena').value||'Customer';
+  var tadashi=document.getElementById('ryoshuusho-tadashi').value||'For dining';
+  var t=getRyoshuushoTotal();
+  var now=new Date();
+  var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate();
+  document.getElementById('ryoshuusho-preview').innerHTML=
+    '<div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:6px;">INVOICE / 領収書</div>'+
+    '<div style="border-bottom:1px solid #000;padding-bottom:4px;margin-bottom:6px;font-size:13px;">To: '+atena+'</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span>Amount（税込）</span><span style="font-weight:bold;font-size:16px;">¥'+t.total.toLocaleString()+'</span></div>'+
+    '<div style="font-size:11px;color:#555;margin-bottom:4px;">For: '+tadashi+'</div>'+
+    '<div style="font-size:11px;color:#555;margin-bottom:8px;">Payment received.</div>'+
+    '<div style="font-size:11px;color:#555;margin-bottom:6px;">'+dateStr+'</div>'+
+    '<div class="receipt-hr"></div>'+
+    '<div style="font-size:11px;text-align:right;margin-top:6px;">JUNTARA CURRY<br>Higashi-Sapporo, Shiroishi-ku</div>';
+}
+async function printRyoshuusho(){
+  var atena=document.getElementById('ryoshuusho-atena').value||'Customer';
+  var tadashi=document.getElementById('ryoshuusho-tadashi').value||'For dining';
+  var t=getRyoshuushoTotal();
+  var now=new Date();
+  var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate();
+  if(window._saveSaleToCloud)await window._saveSaleToCloud(currentTable,currentPaymentMethod);
+  await window.queuePrint({type:'ryoshuusho',atena:atena,tadashi:tadashi,total:t.total,dateStr:dateStr});
+  closeRyoshuusho();
+  localStorage.removeItem('history_'+currentTable);
+  localStorage.removeItem('guests_'+currentTable);
+  localStorage.removeItem('checkin_'+currentTable);
+  showIndex();
+}
+
+// ---- Firebase stubs ----
+function cloudSync(tableId){if(window._cloudSync)window._cloudSync(tableId);}
+function showAdmin(mode){if(window._showAdmin)window._showAdmin(mode);else alert('Connecting to Firebase...');}
+function logoutOwner(){if(window._logoutOwner)window._logoutOwner();}
+function handleLogin(){if(window._handleLogin)window._handleLogin();}
+function exportCSV(){if(window._exportCSV)window._exportCSV();}
+function printReport(m){if(window._printReport)window._printReport(m);}
+
+renderIndex();
+</script>
+
+<!-- Firebase -->
+<script type="module">
+(async function(){
+try{
+const {initializeApp}=await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+const {getFirestore,doc,setDoc,deleteDoc,onSnapshot,collection,addDoc,getDocs,Timestamp,serverTimestamp}=await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+const FC={apiKey:"AIzaSyD_m3-1_fHNBNNhDRt6ZWXsilptcrvXCM",authDomain:"revoreji.firebaseapp.com",projectId:"revoreji",storageBucket:"revoreji.firebasestorage.app",messagingSenderId:"91184668244",appId:"1:91184668244:web:22e34995fe0f69d1e9d7c1"};
+const SID='juntara';
+const app=initializeApp(FC);
+const db=getFirestore(app);
+window._db=db;
+window._firestoreUtils={addDoc,collection,serverTimestamp};
+window._fbCurrentUser=null;
+onSnapshot(collection(db,'stores/'+SID+'/tables'),function(snapshot){
+  var ids=snapshot.docs.map(function(d){return d.id;});
+  getAllTables().forEach(function(t){
+    if(ids.indexOf(t.id)<0){localStorage.removeItem('history_'+t.id);localStorage.removeItem('guests_'+t.id);localStorage.removeItem('checkin_'+t.id);}
+  });
+  snapshot.forEach(function(docSnap){
+    var d=docSnap.data();var tid=docSnap.id;
+    localStorage.setItem('history_'+tid,JSON.stringify(d.history||[]));
+    if(d.guests)localStorage.setItem('guests_'+tid,d.guests);
+    if(d.checkin)localStorage.setItem('checkin_'+tid,d.checkin);
+  });
+  renderIndex();
+});
+window._cloudSync=async function(tableId){
+  try{await setDoc(doc(db,'stores/'+SID+'/tables',tableId),{
+    history:JSON.parse(localStorage.getItem('history_'+tableId)||'[]'),
+    guests:parseInt(localStorage.getItem('guests_'+tableId))||0,
+    checkin:localStorage.getItem('checkin_'+tableId)||'',
+    updatedAt:Timestamp.now()
+  },{merge:true});}catch(e){console.warn('sync:',e.message);}
+};
+window._saveSaleToCloud=async function(tableId,payMethod){
+  var hist=JSON.parse(localStorage.getItem('history_'+tableId)||'[]');
+  if(!hist.length)return;
+  var guests=parseInt(localStorage.getItem('guests_'+tableId))||0;
+  var checkin=localStorage.getItem('checkin_'+tableId)||'';
+  var subtotal=0,tax=0;
+  hist.forEach(function(i){subtotal+=i.price*i.qty;tax+=Math.floor(i.price*i.qty*i.rate);});
+  var now=new Date();
+  var checkout=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  try{
+    await addDoc(collection(db,'stores/'+SID+'/sales'),{
+      tableId:tableId,guests:guests,checkin:checkin,checkout:checkout,
+      items:hist,total:subtotal,
+      paymentMethod:payMethod||'Cash',isTakeout:(tableId==='TO'),timestamp:Timestamp.now()
+    });
+    await deleteDoc(doc(db,'stores/'+SID+'/tables',tableId));
+  }catch(e){console.warn('sale:',e.message);}
+};
+window.getSalesData=async function(){
+  var snap=await getDocs(collection(db,'stores/'+SID+'/sales'));
+  var all=[];snap.forEach(function(d){var data=d.data();data.id=d.id;all.push(data);});
+  return all.sort(function(a,b){return b.timestamp-a.timestamp;});
+};
+window._showAdmin=async function(mode){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById('view-admin').classList.add('active');
+  document.querySelectorAll('.admin-nav-btn').forEach(function(b){b.classList.remove('active');});
+  var navId=mode==='month'?'month':mode==='dow'?'dow':mode==='dates'?'dates':mode==='menu'?'menu':'day';
+  var navEl=document.getElementById('nav-'+navId);if(navEl)navEl.classList.add('active');
+  var selArea=document.getElementById('month-selector-area');
+  selArea.style.display=(mode==='month'||mode==='menu'||mode==='dates'||mode==='dow')?'flex':'none';
+  var list=document.getElementById('sales-list');
+  list.innerHTML='<p style="text-align:center;padding:50px;">Loading...</p>';
+  var allSales=await window.getSalesData();
+  if(mode==='month'||mode==='dates'||mode==='dow'||mode==='menu'){
+    var monthSet={};
+    allSales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');monthSet[k]=d.getFullYear()+'/'+(d.getMonth()+1);});
+    var sel=document.getElementById('month-selector');var curVal=sel.value;
+    var now2=new Date();var defKey=now2.getFullYear()+'-'+String(now2.getMonth()+1).padStart(2,'0');
+    sel.innerHTML=Object.keys(monthSet).sort().reverse().map(function(k){return '<option value="'+k+'" '+((curVal||defKey)===k?'selected':'')+'>'+monthSet[k]+'</option>';}).join('');
+  }
+  var now=new Date();
+  function getSelYM(){return document.getElementById('month-selector').value.split('-').map(Number);}
+  var sales;
+  if(mode==='month'||mode==='dates'||mode==='dow'){var ym=getSelYM();sales=allSales.filter(function(s){var d=s.timestamp.toDate();return d.getFullYear()===ym[0]&&d.getMonth()+1===ym[1];});}
+  else if(mode==='day'){sales=allSales.filter(function(s){return s.timestamp.toDate().toDateString()===now.toDateString();});}
+  else{sales=allSales;}
+  var total=0,guests=0;
+  if(mode==='day'){
+    var cards=sales.map(function(s){total+=s.total;guests+=s.guests;
+      return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time">'+s.checkout+'</span><span class="sale-table-badge">'+s.tableId+'</span></div>'+
+        '<div class="sale-detail-info">Guests: '+s.guests+' / In: '+s.checkin+' / '+(s.paymentMethod||'Cash')+'</div>'+
+        '<div class="sale-total-line"><span class="sale-price-big">¥'+s.total.toLocaleString()+'</span>'+
+        (window._fbCurrentUser?'<button class="btn-del-sale" onclick="window._delSale(\''+s.id+'\')">Delete</button>':'')+
+        '</div></div>';
+    }).join('')||'<p style="text-align:center;padding:50px;">No sales today</p>';
+    list.innerHTML=cards;
+  }else if(mode==='dates'){
+    var dayMap={};
+    sales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      var label=k+'（'+dow+'）';
+      if(!dayMap[label])dayMap[label]={label:label,t:0,c:0,g:0,ts:d.getTime(),ids:[],pay:{}};
+      dayMap[label].t+=s.total;dayMap[label].c++;dayMap[label].g+=s.guests;dayMap[label].ids.push(s.id);
+      var pm=s.paymentMethod||'Cash';dayMap[label].pay[pm]=(dayMap[label].pay[pm]||0)+s.total;total+=s.total;guests+=s.guests;
+    });
+    window._dayDeleteMap=dayMap;
+    list.innerHTML=Object.values(dayMap).sort(function(a,b){return b.ts-a.ts;}).map(function(s){
+      var pd=Object.entries(s.pay).map(function(kv){return kv[0]+': ¥'+kv[1].toLocaleString();}).join(' / ');
+      return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div>'+
+        '<div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div>'+
+        '<div class="sale-detail-info" style="color:#888;font-size:12px;">'+pd+'</div>'+
+        '<div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span>'+
+        (window._fbCurrentUser?'<button class="btn-del-sale" onclick="window._delDay(\''+s.label+'\')">Delete</button>':'')+
+        '</div></div>';
+    }).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
+  }else if(mode==='dow'){
+    var labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var stats=labels.map(function(l){return{l:l,t:0,c:0,g:0};});
+    sales.forEach(function(s){var dow=s.timestamp.toDate().getDay();stats[dow].t+=s.total;stats[dow].c++;stats[dow].g+=s.guests;total+=s.total;guests+=s.guests;});
+    list.innerHTML=stats.map(function(s){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time">'+s.l+'</span></div><div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';}).join('');
+  }else if(mode==='month'){
+    var dm2={};
+    sales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      if(!dm2[k])dm2[k]={label:k+'（'+dow+'）',t:0,c:0,g:0,ts:d.getTime()};
+      dm2[k].t+=s.total;dm2[k].c++;dm2[k].g+=s.guests;total+=s.total;guests+=s.guests;
+    });
+    list.innerHTML=Object.values(dm2).sort(function(a,b){return b.ts-a.ts;}).map(function(s){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div><div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';}).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
+  }else if(mode==='menu'){
+    var ym2=getSelYM();
+    var ms=allSales.filter(function(s){var d=s.timestamp.toDate();return d.getFullYear()===ym2[0]&&d.getMonth()+1===ym2[1];});
+    var im={};
+    ms.forEach(function(s){total+=s.total;guests+=s.guests;(s.items||[]).forEach(function(item){var name=item.ja||item.name||'?';if(!im[name])im[name]={qty:0,amount:0};im[name].qty+=item.qty;im[name].amount+=item.price*item.qty;});});
+    list.innerHTML='<div style="padding:12px 15px;background:#f8f8f8;font-size:13px;color:#666;border-bottom:1px solid #eee;">📅 '+ym2[0]+'/'+ym2[1]+' — Sales by Item (by qty)</div>'+
+      Object.entries(im).sort(function(a,b){return b[1].qty-a[1].qty;}).map(function(kv,i){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:14px;">'+(i+1)+'. '+kv[0]+'</span></div><div class="sale-detail-info">Qty: '+kv[1].qty+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+kv[1].amount.toLocaleString()+'</span></div></div>';}).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
+    document.getElementById('sum-count').innerText=ms.length;
+  }
+  document.getElementById('sum-total').innerText=total.toLocaleString();
+  document.getElementById('sum-guests').innerText=guests;
+  if(mode!=='menu')document.getElementById('sum-count').innerText=sales.length;
+  var typeArea=document.getElementById('sales-type-summary-area');
+  if(mode!=='menu'&&mode!=='dow'){
+    var tm={'Eat In':0,'Takeout':0};
+    sales.forEach(function(s){if(s.tableId==='TO')tm['Takeout']+=s.total;else tm['Eat In']+=s.total;});
+    typeArea.innerHTML=Object.entries(tm).map(function(kv){return '<span style="background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';}).join('');
+    typeArea.style.display='flex';
+  }else{typeArea.style.display='none';}
+  var payArea=document.getElementById('payment-summary-area');
+  if(mode!=='menu'&&mode!=='dow'){
+    var pm={};sales.forEach(function(s){var p=s.paymentMethod||'Cash';if(!pm[p])pm[p]=0;pm[p]+=s.total;});
+    payArea.innerHTML=Object.entries(pm).map(function(kv){return '<span style="background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';}).join('');
+    payArea.style.display='flex';
+  }else{payArea.style.display='none';}
+};
+window._delSale=async function(id){if(!confirm('消去しますか？'))return;await deleteDoc(doc(db,'stores/'+SID+'/sales',id));setTimeout(function(){window._showAdmin('day');},500);};
+window._delDay=async function(label){
+  if(!confirm(label+'\nDelete all data for this day?'))return;
+  var dm=window._dayDeleteMap;if(dm&&dm[label]){for(var i=0;i<dm[label].ids.length;i++)await deleteDoc(doc(db,'stores/'+SID+'/sales',dm[label].ids[i]));}
+  setTimeout(function(){window._showAdmin('dates');},500);
+};
+window._logoutOwner=function(){window._fbCurrentUser=null;var btn=document.getElementById('admin-btn-label');if(btn)btn.innerText='Sales';alert('Logged out');showIndex();};
+window._handleLogin=function(){
+  var input=document.getElementById('login-pass-input').value;
+  var saved=localStorage.getItem('ownerPass')||'';
+  if(!saved){alert('設定画面でパスワードを設定してください');return;}
+  if(input===saved){window._fbCurrentUser=true;var btn=document.getElementById('admin-btn-label');if(btn)btn.innerText='Sales (Owner)';window._showAdmin('day');}
+  else{alert('パスワードが違います');}
+};
+window._exportCSV=async function(){
+  var data=await window.getSalesData();
+  var csv='DateTime,Table,Guests,CheckIn,CheckOut,Payment,Total\n';
+  data.forEach(function(d){var dt=d.timestamp.toDate().toLocaleString('ja-JP');csv+=dt+','+d.tableId+','+(d.guests||0)+','+(d.checkin||'')+','+(d.checkout||'')+','+(d.paymentMethod||'Cash')+','+(d.total||0)+'\n';});
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='juntara_sales.csv';a.click();
+};
+window._printReport=async function(mode){
+  var data=await window.getSalesData();
+  var now=new Date();var label,filtered;
+  if(mode==='day'){label='Daily';filtered=data.filter(function(s){return s.timestamp.toDate().toDateString()===now.toDateString();});}
+  else{label='Monthly';filtered=data.filter(function(s){var d=s.timestamp.toDate();return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});}
+  var total=0,guests=0;filtered.forEach(function(d){total+=d.total||0;guests+=d.guests||0;});
+  await window.queuePrint({
+    type:mode==='day'?'daily':'monthly',
+    label:label,
+    dateStr:now.toLocaleDateString('ja-JP'),
+    orders:filtered.length,
+    guests:guests,
+    total:total
+  });
+  alert('印刷キューに送信しました');
+};
+console.log('✅ Firebase (juntara)');
+}catch(e){console.warn('⚠️ Firebase error:',e.message);}
+})();
+</script>
+
+<!-- StarWebPRNT SDK removed (CloudPRNT) -->
+</body>
+</html>
