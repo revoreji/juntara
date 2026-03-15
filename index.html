@@ -195,20 +195,35 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
     <div class="item-grid" id="item-grid"></div>
   </div>
   <footer style="flex-direction:column;gap:0;padding:0;">
-    <div style="display:flex;width:100%;background:var(--primary);padding:16px 12px;box-sizing:border-box;align-items:center;justify-content:space-between;" onclick="showOrderHistory()">
-      <span style="color:#fff;font-size:14px;" id="footer-hist-text">−</span>
-      <span style="color:#ffd;font-size:14px;">▶ View Order</span>
+    <div class="footer-history" onclick="showOrderHistory()">
+      <span>Order Total</span>
+      <span id="display-current-total">¥0</span>
     </div>
-    <div style="display:flex;width:100%;gap:0;">
-      <div style="flex:1;background:#f5f5f5;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;" onclick="showOrderHistory()">
-        <div style="font-size:11px;color:#888;">Unsent</div>
-        <div style="font-weight:bold;font-size:16px;color:var(--accent);" id="footer-unsent-text">0 items</div>
+    <div style="display:flex;gap:0;">
+      <div class="footer-cart" style="flex:1;" onclick="showOrderHistory()">
+        <div>🛒 <span id="footer-unsent-text">0</span> items</div>
+        <div>View Order ＞</div>
       </div>
-      <button id="btn-send-kitchen" onclick="sendToKitchen()" style="flex:2;background:#e74c3c;color:#fff;border:none;font-size:18px;font-weight:bold;padding:14px;cursor:pointer;">
-        🖨️ Send to Kitchen
-      </button>
+      <div style="background:#8e44ad;color:#fff;padding:18px 14px;font-weight:bold;font-size:13px;cursor:pointer;white-space:nowrap;" onclick="openCustomItem()">＋Custom</div>
     </div>
   </footer>
+</div>
+
+<!-- Custom Item Modal -->
+<div id="overlay-custom" class="overlay" style="display:none;">
+<div class="modal" style="width:92%;max-width:400px;">
+    <div class="modal-title">Add Custom Item</div>
+    <div style="text-align:left;margin-bottom:8px;font-size:14px;font-weight:bold;color:#555;">Item Name</div>
+    <input id="custom-name" type="text" placeholder="Enter item name" style="width:100%;padding:14px;border:1px solid #ddd;border-radius:10px;font-size:16px;margin-bottom:16px;box-sizing:border-box;">
+    <div style="text-align:left;margin-bottom:8px;font-size:14px;font-weight:bold;color:#555;">Price &amp; Qty</div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;">
+        <input id="custom-price" type="number" placeholder="Price" style="flex:2;padding:14px;border:1px solid #ddd;border-radius:10px;font-size:16px;">
+        <span style="color:#999;flex-shrink:0;">×</span>
+        <input id="custom-qty" type="number" placeholder="Qty" value="1" style="width:70px;flex-shrink:0;padding:14px;border:1px solid #ddd;border-radius:10px;font-size:16px;">
+    </div>
+    <button class="btn-large" style="background:var(--primary);color:white;" onclick="addCustomItem()">Add to Order</button>
+    <div style="margin-top:10px;color:#999;font-size:13px;cursor:pointer;text-align:center;" onclick="closeCustomItem()">Cancel</div>
+</div>
 </div>
 
 <!-- 注文一覧（修正画面） -->
@@ -217,9 +232,9 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
   <div class="list-container" id="history-items-list"></div>
   <div class="summary-area" id="history-summary"></div>
   <div style="background:#fff;border-top:1px solid #ddd;padding-bottom:10px;">
+    <button class="btn-large" style="background:#2196F3;color:#fff;" onclick="printDenpyo()">🖨️ Print Bill</button>
     <button class="btn-large" style="background:var(--primary);color:#fff;" onclick="showCheckout()">Checkout →</button>
-    <button class="btn-large" style="background:#e74c3c;color:#fff;" onclick="sendToKitchen()">🖨️ Send to Kitchen</button>
-    <button class="btn-large" style="background:#fff;color:#888;border:1px solid #ddd;" onclick="backToMenu()">← Back to Menu</button>
+
   </div>
 </div>
 
@@ -374,6 +389,47 @@ window.queuePrint = async function(jobData) {
   }
 };
 // ▲ CloudPRNT印刷キュー
+
+// ▼ Print Bill
+window.printDenpyo = async function() {
+    const tableId = currentTable;
+    const hist = JSON.parse(localStorage.getItem('history_' + tableId) || '[]');
+    if (hist.length === 0) { alert('No orders found.'); return; }
+    const guests = parseInt(localStorage.getItem('guests_' + tableId)) || 0;
+    const checkin = localStorage.getItem('checkin_' + tableId) || '--:--';
+    const total = hist.reduce((s, i) => s + i.price * i.qty, 0);
+    await window.queuePrint({
+        type: 'denpyo',
+        tableId,
+        tableNo: tableId,
+        guests,
+        checkinTime: checkin,
+        items: hist.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+        total
+    });
+    alert('Bill sent to printer.');
+};
+// ▲ Print Bill
+
+// ▼ Custom Item
+let customTaxRate = 0.10;
+function openCustomItem() {
+    document.getElementById('custom-name').value = '';
+    document.getElementById('custom-price').value = '';
+    document.getElementById('custom-qty').value = '1';
+    document.getElementById('overlay-custom').style.display = 'flex';
+}
+function closeCustomItem() { document.getElementById('overlay-custom').style.display = 'none'; }
+function addCustomItem() {
+    const name = document.getElementById('custom-name').value.trim();
+    const price = parseInt(document.getElementById('custom-price').value);
+    const qty = parseInt(document.getElementById('custom-qty').value) || 1;
+    if (!name) return alert('Please enter item name.');
+    if (!price || price <= 0) return alert('Please enter price.');
+    addToHistory(name, name, price, 0.10, qty);
+    closeCustomItem();
+}
+// ▲ Custom Item
 
 var TABLES=[
   {id:'T1',label:'T1',sub:'テーブル'},
@@ -1331,18 +1387,11 @@ function updateFooter(){
     else{sentCnt+=i.qty;}
   });
   var fu=document.getElementById('footer-unsent-text');
-  if(fu){
-    if(unsentCnt>0){fu.innerText=unsentCnt+' items  ¥'+unsentTotal.toLocaleString();fu.style.color='var(--accent)';}
-    else{fu.innerText='なし';fu.style.color='#aaa';}
-  }
+  if(fu) fu.innerText=unsentCnt;
   var btn=document.getElementById('btn-send-kitchen');
   if(btn)btn.style.background=unsentCnt>0?'#e74c3c':'#bbb';
-  var fh=document.getElementById('footer-hist-text');
-  if(fh){
-    var g=localStorage.getItem('guests_'+currentTable)||0;
-    var ci=localStorage.getItem('checkin_'+currentTable)||'--:--';
-    fh.innerText=currentTable+' / '+g+' pax / IN '+ci+'  Sent:'+sentCnt+' Total: ¥'+totalAll.toLocaleString();
-  }
+  var dt=document.getElementById('display-current-total');
+  if(dt) dt.innerText='¥'+totalAll.toLocaleString();
 }
 
 // ---- 注文一覧（修正） ----
