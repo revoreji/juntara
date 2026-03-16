@@ -906,13 +906,13 @@ function renderSoupModal(){
 function confirmSoupCurry(){
   var spice=SPICE_LEVELS.filter(function(s){return s.id===selSoupSpice;})[0];
   var toppingKeys=Object.keys(selSoupToppings);
-  var toppingExtra=toppingKeys.reduce(function(s,k){return s+selSoupToppings[k].price;},0);
   var jaOpt='['+spice.ja+' / '+selSoupNaan.ja+']';
   var enOpt='['+spice.en+' / '+selSoupNaan.en+']';
-  addToHistory(pendingSoup.ja+' '+jaOpt, pendingSoup.en+' '+enOpt, pendingSoup.price, pendingSoup.rate, 1);
+  var gid='g'+Date.now();
+  addToHistory(pendingSoup.ja+' '+jaOpt, pendingSoup.en+' '+enOpt, pendingSoup.price, pendingSoup.rate, 1, gid);
   toppingKeys.forEach(function(k){
     var t=selSoupToppings[k];
-    addToHistory('トッピング '+t.ja,'Topping: '+t.en,t.price,0,1);
+    addToHistory('トッピング '+t.ja,'Topping: '+t.en,t.price,0,1,gid);
   });
   document.getElementById('overlay-curry').style.display='none';
   updateFooter();
@@ -1628,19 +1628,21 @@ async function sendToKitchen(){
   if(unsent.length===0){alert('No unsent orders');return;}
   var now=new Date();
   var t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  // groupIdでまとめる: groupIdあり→1 job (items配列), なし→個別 job
-  var groups={};var singles=[];
+  // groupIdでまとめる: groupIdあり→改行結合で1 job, なし→個別 job
+  var groups={};var groupOrder=[];var singles=[];
   unsent.forEach(function(i){
     if(i.groupId){
-      if(!groups[i.groupId])groups[i.groupId]=[];
+      if(!groups[i.groupId]){groups[i.groupId]=[];groupOrder.push(i.groupId);}
       groups[i.groupId].push(i);
     }else{singles.push(i);}
   });
-  for(var gid in groups){
+  for(var gi=0;gi<groupOrder.length;gi++){
+    var gid=groupOrder[gi];
     var items=groups[gid];
+    var combinedName=items.map(function(i){return i.en+(i.qty>1?' x'+i.qty:'');}).join('\n  + ');
     await window.queuePrint({
       type:'kitchen',tableId:currentTable,tag:'H',time:t,
-      items:items.map(function(i){return{name:i.en,qty:i.qty};})
+      itemName:combinedName,itemQty:1
     });
   }
   for(var i=0;i<singles.length;i++){
