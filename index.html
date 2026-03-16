@@ -1107,11 +1107,12 @@ function confirmChoiceSet(drink){
   enParts.push(drink.en);
   var jaOpt='['+parts.join(' / ')+']';
   var enOpt='['+enParts.join(' / ')+']';
-  addToHistory(pendingChoice.ja+' '+jaOpt, pendingChoice.en+' '+enOpt, pendingChoice.price, pendingChoice.rate, 1);
+  var gid='g'+Date.now();
+  addToHistory(pendingChoice.ja+' '+jaOpt, pendingChoice.en+' '+enOpt, pendingChoice.price, pendingChoice.rate, 1, gid);
   if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
     var naanJa=selChoiceNaanType?selChoiceNaanType.ja:'ナン変更';
     var naanEn=selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade';
-    addToHistory(naanJa,naanEn,300,pendingChoice.rate,1);
+    addToHistory(naanJa,naanEn,300,pendingChoice.rate,1,gid);
   }
   document.getElementById('overlay-curry').style.display='none';
   updateFooter();
@@ -1198,11 +1199,12 @@ function renderBiryaniModal(){
 }
 
 function confirmBiryaniSet(drink){
+  var gid='g'+Date.now();
   var jaOpt='['+drink.ja+']';
   var enOpt='['+drink.en+']';
-  addToHistory(pendingBiryani.ja+' '+jaOpt, pendingBiryani.en+' '+enOpt, pendingBiryani.price, pendingBiryani.rate, 1);
+  addToHistory(pendingBiryani.ja+' '+jaOpt, pendingBiryani.en+' '+enOpt, pendingBiryani.price, pendingBiryani.rate, 1, gid);
   if(selBiryaniSize==='large'){
-    addToHistory('大盛り','Large Size',200,pendingBiryani.rate,1);
+    addToHistory('大盛り','Large Size',200,pendingBiryani.rate,1,gid);
   }
   document.getElementById('overlay-curry').style.display='none';
   updateFooter();
@@ -1421,22 +1423,25 @@ function confirmCurry(){
   var spice=null,naan=null;
   for(var i=0;i<SPICE_LEVELS.length;i++){if(SPICE_LEVELS[i].id===selSpice){spice=SPICE_LEVELS[i];break;}}
   for(var i=0;i<NAAN_OPTIONS.length;i++){if(NAAN_OPTIONS[i].id===selNaan){naan=NAAN_OPTIONS[i];break;}}
+  var gid='g'+Date.now();
   var jaName=pendingCurry.ja;
   var enName=pendingCurry.en+' '+spice.en;
-  addToHistory(jaName, enName, pendingCurry.price, pendingCurry.rate, 1);
+  addToHistory(jaName, enName, pendingCurry.price, pendingCurry.rate, 1, gid);
   if(selSize==='大盛り'){
-    addToHistory('大盛り','Large Size',300,pendingCurry.rate,1);
+    addToHistory('大盛り','Large Size',300,pendingCurry.rate,1,gid);
   }
-  addToHistory(naan.ja, naan.en, naan.price, pendingCurry.rate, 1);
+  if(naan.price>0){
+    addToHistory(naan.ja, naan.en, naan.price, pendingCurry.rate, 1, gid);
+  }
   closeCurryModal();
 }
 
 // ---- カート ----
-function addToHistory(ja,en,price,rate,qty){
+function addToHistory(ja,en,price,rate,qty,groupId){
   var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
-  var key=ja+'__'+price;var found=false;
+  var key=ja+'__'+price+(groupId?'__'+groupId:'');var found=false;
   for(var i=0;i<hist.length;i++){if(hist[i].key===key&&!hist[i].sent){hist[i].qty+=qty;found=true;break;}}
-  if(!found){hist.push({key:key,ja:ja,en:en,name:ja,price:price,rate:rate||0,qty:qty,sent:false});}
+  if(!found){hist.push({key:key,ja:ja,en:en,name:ja,price:price,rate:rate||0,qty:qty,sent:false,groupId:groupId||null});}
   localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
   cloudSync(currentTable);updateFooter();
 }
@@ -1623,12 +1628,25 @@ async function sendToKitchen(){
   if(unsent.length===0){alert('No unsent orders');return;}
   var now=new Date();
   var t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  var sentCount=hist.filter(function(i){return i.sent;}).reduce(function(s,i){return s+i.qty;},0);
-  var isAdditional=sentCount>0;
-  for(var i=0;i<unsent.length;i++){
+  // groupIdでまとめる: groupIdあり→1 job (items配列), なし→個別 job
+  var groups={};var singles=[];
+  unsent.forEach(function(i){
+    if(i.groupId){
+      if(!groups[i.groupId])groups[i.groupId]=[];
+      groups[i.groupId].push(i);
+    }else{singles.push(i);}
+  });
+  for(var gid in groups){
+    var items=groups[gid];
     await window.queuePrint({
       type:'kitchen',tableId:currentTable,tag:'H',time:t,
-      isAdditional:isAdditional,itemName:unsent[i].en,itemQty:unsent[i].qty
+      items:items.map(function(i){return{name:i.en,qty:i.qty};})
+    });
+  }
+  for(var i=0;i<singles.length;i++){
+    await window.queuePrint({
+      type:'kitchen',tableId:currentTable,tag:'H',time:t,
+      itemName:singles[i].en,itemQty:singles[i].qty
     });
   }
   hist.forEach(function(i){if(!i.sent)i.sent=true;});
