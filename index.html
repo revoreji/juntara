@@ -200,7 +200,7 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
       <span id="display-current-total">¥0</span>
     </div>
     <div style="display:flex;gap:0;">
-      <div class="footer-cart" style="flex:1;" onclick="showOrderHistory()">
+      <div class="footer-cart" style="flex:1;" onclick="showCart()">
         <div>🛒 <span id="footer-unsent-text">0</span> items</div>
         <div>View Order ＞</div>
       </div>
@@ -224,6 +224,16 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
     <button class="btn-large" style="background:var(--primary);color:white;" onclick="addCustomItem()">Add to Order</button>
     <div style="margin-top:10px;color:#999;font-size:13px;cursor:pointer;text-align:center;" onclick="closeCustomItem()">Cancel</div>
 </div>
+</div>
+
+<!-- カート確認 -->
+<div id="view-cart" class="view">
+  <header><span class="back-btn" onclick="backToMenu()">＜</span>Cart</header>
+  <div class="list-container" id="cart-items-list"></div>
+  <div style="background:#fff;border-top:1px solid #eee;padding-bottom:10px;">
+    <button class="btn-large" style="background:var(--info);color:white;" onclick="syncOnly()">Sync Only (No Print)</button>
+    <button class="btn-large" style="background:#e74c3c;color:white;" onclick="sendToKitchen()">🖨️ Send to Kitchen</button>
+  </div>
 </div>
 
 <!-- 注文一覧（修正画面） -->
@@ -579,6 +589,35 @@ function showView(id){
 }
 function showIndex(){showView('view-index');renderIndex();}
 function backToMenu(){showView('view-menu');renderSidebar();renderItems();updateFooter();}
+function showCart() {
+  showView('view-cart');
+  renderCartUI();
+}
+function renderCartUI() {
+  var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
+  var unsent = hist.filter(function(i){ return !i.sent; });
+  var list = document.getElementById('cart-items-list');
+  if (!list) return;
+  if (unsent.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">No unsent items</div>';
+    return;
+  }
+  list.innerHTML = unsent.map(function(i) {
+    return '<div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee;font-size:15px;">' +
+      '<span>' + (i.en || i.name) + '</span>' +
+      '<span style="color:#888;">x' + i.qty + '　¥' + (i.price * i.qty).toLocaleString() + '</span>' +
+      '</div>';
+  }).join('');
+}
+function syncOnly() {
+  var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
+  if (hist.filter(function(i){return !i.sent;}).length === 0) return alert('No unsent items.');
+  hist.forEach(function(i){ i.sent = true; });
+  localStorage.setItem('history_' + currentTable, JSON.stringify(hist));
+  cloudSync(currentTable); updateFooter();
+  alert('Synced (no print).');
+}
+
 function showOrderHistory(){showView('view-history');renderHistoryList();}
 function checkAdminAuth(){if(window._fbCurrentUser){showAdmin('day');}else{showView('view-login');}}
 
