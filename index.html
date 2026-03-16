@@ -232,8 +232,14 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
   <div class="list-container" id="cart-items-list"></div>
   <div style="background:#fff;border-top:1px solid #eee;padding-bottom:10px;">
     <button class="btn-large" style="background:var(--info);color:white;" onclick="syncOnly()">Sync Only (No Print)</button>
-    <button class="btn-large" style="background:#e74c3c;color:white;" onclick="sendToKitchen()">🖨️ Send to Kitchen</button>
+    <button id="btn-send-kitchen" class="btn-large" style="background:#e74c3c;color:white;" onclick="sendToKitchen()">🖨️ Send to Kitchen</button>
   </div>
+</div>
+
+<!-- 送信完了 -->
+<div id="view-success" class="view" style="text-align:center;justify-content:center;">
+  <h2>✅ Sent!</h2>
+  <button class="btn-large" style="background:var(--primary);color:white;" onclick="backToMenu()">Back to Menu</button>
 </div>
 
 <!-- 注文一覧（修正画面） -->
@@ -595,19 +601,43 @@ function showCart() {
 }
 function renderCartUI() {
   var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
-  var unsent = hist.filter(function(i){ return !i.sent; });
   var list = document.getElementById('cart-items-list');
   if (!list) return;
-  if (unsent.length === 0) {
+  var unsentIndexes = [];
+  hist.forEach(function(i, idx){ if(!i.sent) unsentIndexes.push(idx); });
+  if (unsentIndexes.length === 0) {
     list.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">No unsent items</div>';
     return;
   }
-  list.innerHTML = unsent.map(function(i) {
-    return '<div style="display:flex;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee;font-size:15px;">' +
-      '<span>' + (i.en || i.name) + '</span>' +
-      '<span style="color:#888;">x' + i.qty + '　¥' + (i.price * i.qty).toLocaleString() + '</span>' +
-      '</div>';
+  list.innerHTML = unsentIndexes.map(function(idx) {
+    var i = hist[idx];
+    return '<div class="list-row">' +
+      '<div style="flex:1;"><b>' + (i.en || i.name) + '</b><br><small>¥' + i.price.toLocaleString() + ' × ' + i.qty + '</small></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<div class="btn-circle" onclick="changeCartQty(' + idx + ',-1)">-</div>' +
+      '<span style="font-weight:bold;">' + i.qty + '</span>' +
+      '<div class="btn-circle" onclick="changeCartQty(' + idx + ',1)">+</div>' +
+      '<button onclick="removeFromCart(' + idx + ')" style="color:red;background:none;border:none;font-size:20px;padding:4px 8px;cursor:pointer;">×</button>' +
+      '</div></div>';
   }).join('');
+}
+function changeCartQty(idx, delta) {
+  var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
+  hist[idx].qty += delta;
+  if (hist[idx].qty <= 0) {
+    if (!confirm('Remove this item?')) { hist[idx].qty = 1; }
+    else { hist.splice(idx, 1); }
+  }
+  localStorage.setItem('history_' + currentTable, JSON.stringify(hist));
+  renderCartUI();
+  updateFooter();
+}
+function removeFromCart(idx) {
+  var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
+  hist.splice(idx, 1);
+  localStorage.setItem('history_' + currentTable, JSON.stringify(hist));
+  renderCartUI();
+  updateFooter();
 }
 function syncOnly() {
   var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
@@ -615,7 +645,7 @@ function syncOnly() {
   hist.forEach(function(i){ i.sent = true; });
   localStorage.setItem('history_' + currentTable, JSON.stringify(hist));
   cloudSync(currentTable); updateFooter();
-  alert('Synced (no print).');
+  showView('view-success');
 }
 
 function showOrderHistory(){showView('view-history');renderHistoryList();}
@@ -1631,9 +1661,7 @@ async function sendToKitchen(){
   hist.forEach(function(i){if(!i.sent)i.sent=true;});
   localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
   cloudSync(currentTable);updateFooter();
-  var btn=document.getElementById('btn-send-kitchen');
-  if(btn){btn.innerText='✅ Sent!';btn.style.background='#27ae60';
-    setTimeout(function(){btn.innerText='🖨️ Send to Kitchen';updateFooter();},1500);}
+  showView('view-success');
 }
 function printKitchen(){sendToKitchen();}
 
