@@ -613,21 +613,14 @@ function renderCartUI() {
     var i = hist[idx];
     return '<div class="list-row">' +
       '<div style="flex:1;"><b>' + (i.en || i.name) + '</b><br><small>¥' + i.price.toLocaleString() + ' × ' + i.qty + '</small></div>' +
-      '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<div class="btn-circle" onclick="changeCartQty(' + idx + ',-1)">-</div>' +
-      '<span style="font-weight:bold;">' + i.qty + '</span>' +
-      '<div class="btn-circle" onclick="changeCartQty(' + idx + ',1)">+</div>' +
-      '<button onclick="removeFromCart(' + idx + ')" style="color:red;background:none;border:none;font-size:20px;padding:4px 8px;cursor:pointer;">×</button>' +
-      '</div></div>';
+      '<button onclick="removeFromCart(' + idx + ')" style="color:#e74c3c;background:#fff0f0;border:1px solid #e74c3c;border-radius:6px;font-size:13px;font-weight:bold;padding:6px 12px;cursor:pointer;">Delete</button>' +
+      '</div>';
   }).join('');
 }
 function changeCartQty(idx, delta) {
   var hist = []; try { hist = JSON.parse(localStorage.getItem('history_' + currentTable) || '[]'); } catch(e) {}
   hist[idx].qty += delta;
-  if (hist[idx].qty <= 0) {
-    if (!confirm('Remove this item?')) { hist[idx].qty = 1; }
-    else { hist.splice(idx, 1); }
-  }
+  if (hist[idx].qty < 1) hist[idx].qty = 1;
   localStorage.setItem('history_' + currentTable, JSON.stringify(hist));
   renderCartUI();
   updateFooter();
@@ -1110,15 +1103,16 @@ function confirmChoiceSet(drink){
   if(type==='tandoori'){parts.push(selChoiceNaan==='naan'?'プレーンナン':'ライス');enParts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');}
   else if(type==='tikka'){parts.push('チーズナン');enParts.push('Cheese Naan');}
   else{parts.push('ライス');enParts.push('Rice');}
-  if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
-    parts.push((selChoiceNaanType?selChoiceNaanType.ja:'ナン変更')+' +¥300');
-    enParts.push((selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade')+' +¥300');
-  }
   parts.push(drink.ja);
   enParts.push(drink.en);
   var jaOpt='['+parts.join(' / ')+']';
   var enOpt='['+enParts.join(' / ')+']';
-  addToHistory(pendingChoice.ja+' '+jaOpt, pendingChoice.en+' '+enOpt, pendingChoice.price+extra, pendingChoice.rate, 1);
+  addToHistory(pendingChoice.ja+' '+jaOpt, pendingChoice.en+' '+enOpt, pendingChoice.price, pendingChoice.rate, 1);
+  if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
+    var naanJa=selChoiceNaanType?selChoiceNaanType.ja:'ナン変更';
+    var naanEn=selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade';
+    addToHistory(naanJa,naanEn,300,pendingChoice.rate,1);
+  }
   document.getElementById('overlay-curry').style.display='none';
   updateFooter();
 }
@@ -1204,12 +1198,12 @@ function renderBiryaniModal(){
 }
 
 function confirmBiryaniSet(drink){
-  var extra=selBiryaniSize==='large'?200:0;
-  var sizeJa=selBiryaniSize==='large'?'大盛り':'普通';
-  var sizeEn=selBiryaniSize==='large'?'Large':'Regular';
-  var jaOpt='['+sizeJa+' / '+drink.ja+']';
-  var enOpt='['+sizeEn+' / '+drink.en+']';
-  addToHistory(pendingBiryani.ja+' '+jaOpt, pendingBiryani.en+' '+enOpt, pendingBiryani.price+extra, pendingBiryani.rate, 1);
+  var jaOpt='['+drink.ja+']';
+  var enOpt='['+drink.en+']';
+  addToHistory(pendingBiryani.ja+' '+jaOpt, pendingBiryani.en+' '+enOpt, pendingBiryani.price, pendingBiryani.rate, 1);
+  if(selBiryaniSize==='large'){
+    addToHistory('大盛り','Large Size',200,pendingBiryani.rate,1);
+  }
   document.getElementById('overlay-curry').style.display='none';
   updateFooter();
 }
@@ -1427,14 +1421,13 @@ function confirmCurry(){
   var spice=null,naan=null;
   for(var i=0;i<SPICE_LEVELS.length;i++){if(SPICE_LEVELS[i].id===selSpice){spice=SPICE_LEVELS[i];break;}}
   for(var i=0;i<NAAN_OPTIONS.length;i++){if(NAAN_OPTIONS[i].id===selNaan){naan=NAAN_OPTIONS[i];break;}}
-  var extra=selSize==='大盛り'?300:0;
-  var total=pendingCurry.price+extra+naan.price;
-  var sizeJa=selSize==='大盛り'?' 大盛り':'';
-  var sizeEn=selSize==='大盛り'?' Large':'';
-  var jaName=pendingCurry.ja+sizeJa;
-  var enName=pendingCurry.en+' '+spice.en+sizeEn;
-  addToHistory(jaName, enName, total, pendingCurry.rate, 1);
-  addToHistory(naan.ja, naan.en, 0, pendingCurry.rate, 1);
+  var jaName=pendingCurry.ja;
+  var enName=pendingCurry.en+' '+spice.en;
+  addToHistory(jaName, enName, pendingCurry.price, pendingCurry.rate, 1);
+  if(selSize==='大盛り'){
+    addToHistory('大盛り','Large Size',300,pendingCurry.rate,1);
+  }
+  addToHistory(naan.ja, naan.en, naan.price, pendingCurry.rate, 1);
   closeCurryModal();
 }
 
@@ -1465,44 +1458,24 @@ function updateFooter(){
 
 // ---- 注文一覧（修正） ----
 function renderHistoryList(){
-  var list=document.getElementById('history-items-list');
   var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
-  list.innerHTML='';
-  var total=0;
-  function makeSection(label,color,items,canEdit){
-    if(items.length===0)return;
-    var sec=document.createElement('div');
-    sec.style.cssText='padding:8px 12px 4px;font-size:12px;font-weight:bold;color:'+color+';background:#f9f9f9;border-top:2px solid '+color+';';
-    sec.innerText=label;list.appendChild(sec);
-    items.forEach(function(item){
-      var idx=hist.indexOf(item);
-      var lineTotal=item.price*item.qty;total+=lineTotal;
-      var row=document.createElement('div');row.className='list-row';
-      row.style.cssText=item.sent?'opacity:0.6;':'';
-      row.innerHTML='<div style="flex:1">'+
-        '<div style="font-weight:bold;font-size:14px;">'+item.en+'</div>'+
-        '<div style="font-size:10px;color:#bbb;">'+item.ja+'</div>'+
-        '<div style="font-size:12px;color:#aaa;">¥'+item.price.toLocaleString()+' × '+item.qty+'</div></div>'+
-        '<div style="text-align:right;">'+
-        '<div style="font-weight:bold;">¥'+lineTotal.toLocaleString()+'</div>'+
-        (canEdit?'<div style="display:flex;gap:6px;margin-top:6px;">'+
-        '<button style="padding:6px 12px;border-radius:15px;border:1px solid #ddd;background:#fff;font-size:18px;" onclick="changeQty('+idx+',-1)">−</button>'+
-        '<button style="padding:6px 12px;border-radius:15px;border:1px solid #ddd;background:#fff;font-size:18px;" onclick="changeQty('+idx+',1)">＋</button>'+
-        '</div>':'')+
-        '</div>';
-      list.appendChild(row);
-    });
-  }
-  var unsent=hist.filter(function(i){return !i.sent;});
-  var sent=hist.filter(function(i){return i.sent;});
-  makeSection('📝 Unsent','#e74c3c',unsent,true);
-  makeSection('✅ Sent','#27ae60',sent,false);
+  var sub=0,tax=0;
+  document.getElementById('history-items-list').innerHTML=hist.map(function(i,idx){
+    var lp=i.price*i.qty;var lt=Math.floor(lp*i.rate);sub+=lp;tax+=lt;
+    return '<div class="list-row">'+
+      '<div><b>'+(i.en||i.name)+'</b><br><small>Tax incl. ¥'+(lp+lt).toLocaleString()+'</small></div>'+
+      '<button onclick="changeQty('+idx+',0)" style="color:#e74c3c;background:#fff0f0;border:1px solid #e74c3c;border-radius:6px;font-size:13px;font-weight:bold;padding:6px 12px;cursor:pointer;">Delete</button>'+
+      '</div>';
+  }).join('')||'<p style="text-align:center;padding:40px;color:#aaa;">No orders</p>';
+  var g=localStorage.getItem('guests_'+currentTable)||0;
+  var c=localStorage.getItem('checkin_'+currentTable)||'--:--';
   document.getElementById('history-summary').innerHTML=
-    '<strong style="font-size:22px;">Total (tax incl.): ¥'+total.toLocaleString()+'</strong>';
+    '<div style="color:#666;font-size:13px;">In: '+c+' / '+g+' pax</div>'+
+    '<div>Tax incl.: <b style="font-size:24px;color:var(--primary);">¥'+(sub+tax).toLocaleString()+'</b></div>';
 }
 function changeQty(idx,delta){
   var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
-  hist[idx].qty+=delta;if(hist[idx].qty<=0)hist.splice(idx,1);
+  if(delta===0){hist.splice(idx,1);}else{hist[idx].qty+=delta;if(hist[idx].qty<1)hist[idx].qty=1;}
   localStorage.setItem('history_'+currentTable,JSON.stringify(hist));
   cloudSync(currentTable);renderHistoryList();updateFooter();
 }
