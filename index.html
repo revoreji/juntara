@@ -1100,7 +1100,16 @@ function confirmChoiceSet(drink){
   var enParts=[];
   if(selChoiceCurry1){parts.push(selChoiceCurry1.ja);enParts.push(selChoiceCurry1.en);}
   if(selChoiceCurry2){parts.push(selChoiceCurry2.ja);enParts.push(selChoiceCurry2.en);}
-  if(type==='tandoori'){parts.push(selChoiceNaan==='naan'?'プレーンナン':'ライス');enParts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');}
+  if(type==='tandoori'){
+    if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
+      var upgN=selChoiceNaanType?selChoiceNaanType.ja:'ナン変更';
+      var upgNen=selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade';
+      parts.push(upgN);enParts.push(upgNen);
+    }else{
+      parts.push(selChoiceNaan==='naan'?'プレーンナン':'ライス');
+      enParts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');
+    }
+  }
   else if(type==='tikka'){parts.push('チーズナン');enParts.push('Cheese Naan');}
   else{parts.push('ライス');enParts.push('Rice');}
   parts.push(drink.ja);
