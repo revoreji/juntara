@@ -1101,11 +1101,7 @@ function confirmChoiceSet(drink){
   if(selChoiceCurry1){parts.push(selChoiceCurry1.ja);enParts.push(selChoiceCurry1.en);}
   if(selChoiceCurry2){parts.push(selChoiceCurry2.ja);enParts.push(selChoiceCurry2.en);}
   if(type==='tandoori'){
-    if(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0){
-      var upgN=selChoiceNaanType?selChoiceNaanType.ja:'ナン変更';
-      var upgNen=selChoiceNaanType?selChoiceNaanType.en:'Naan Upgrade';
-      parts.push(upgN);enParts.push(upgNen);
-    }else{
+    if(!(selChoiceNaanUpgrade&&selChoiceNaanUpgrade.extra>0)){
       parts.push(selChoiceNaan==='naan'?'プレーンナン':'ライス');
       enParts.push(selChoiceNaan==='naan'?'Plain Naan':'Rice');
     }
@@ -1439,9 +1435,7 @@ function confirmCurry(){
   if(selSize==='大盛り'){
     addToHistory('大盛り','Large Size',300,pendingCurry.rate,1,gid);
   }
-  if(naan.price>0){
-    addToHistory(naan.ja, naan.en, naan.price, pendingCurry.rate, 1, gid);
-  }
+  addToHistory(naan.ja, naan.en, naan.price, pendingCurry.rate, 1, gid);
   closeCurryModal();
 }
 
