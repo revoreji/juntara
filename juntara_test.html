@@ -1972,10 +1972,10 @@ window._printReport=async function(mode){
   else{label='Monthly';filtered=data.filter(function(s){var d=s.timestamp.toDate();return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});}
   var total=0,guests=0;filtered.forEach(function(d){total+=d.total||0;guests+=d.guests||0;});
   await window.queuePrint({
-    type:mode==='day'?'daily':'monthly',
-    label:label,
-    dateStr:now.toLocaleDateString('ja-JP'),
-    orders:filtered.length,
+    type:mode==='day'?'report-day':'report-month',
+    dateLabel:now.toLocaleDateString('ja-JP'),
+    yearMonth:now.getFullYear()+'年'+(now.getMonth()+1)+'月',
+    count:filtered.length,
     guests:guests,
     total:total
   });
