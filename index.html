@@ -1643,8 +1643,9 @@ function _coUpdateDisplay() {
     btn.disabled = true; btn.textContent = '¥' + diff.toLocaleString() + ' short';
   } else {
     changeEl.textContent = '¥ ―'; changeEl.className = 'co-amount-val green';
-    btn.disabled = currentPaymentMethod === 'Cash';
-    btn.textContent = currentPaymentMethod === 'Cash' ? 'Enter amount' : 'Confirm & Pay';
+    var needAmount = (currentPaymentMethod === 'Cash') && (coReceiptMode !== 'ryoshu');
+    btn.disabled = needAmount;
+    btn.textContent = needAmount ? 'Enter amount' : 'Confirm & Pay';
   }
 }
 
@@ -1654,6 +1655,7 @@ function setCoReceipt(mode) {
     var el = document.getElementById('co-r-' + k);
     if (el) el.classList.toggle('co-r-active', k === mode);
   });
+  _coUpdateDisplay();
 }
 
 async function payCo() {
