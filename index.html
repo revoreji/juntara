@@ -30,7 +30,7 @@ header{background:var(--primary);color:#fff;padding:0 15px;display:flex;align-it
 .sidebar{width:95px;background:#f5e6e0;overflow-y:auto;border-right:1px solid #e0c8c0;flex-shrink:0;}
 .cat{padding:18px 6px;font-size:12px;text-align:center;border-bottom:1px solid #e0c8c0;cursor:pointer;color:#666;line-height:1.4;}
 .cat.active{background:#fff;color:var(--primary);font-weight:bold;border-left:5px solid var(--primary);}
-.item-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;align-content:start;background:#fff;padding-bottom:140px;}
+.item-grid{flex:1;overflow-y:auto;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;align-content:start;background:#fff;padding-bottom:140px;}
 .item-card{background:#fff;border:1px solid #f0e0d8;border-radius:12px;padding:12px;display:flex;flex-direction:column;box-shadow:0 2px 6px rgba(155,27,48,0.07);}
 .item-name{font-size:10px;color:#aaa;line-height:1.4;margin-bottom:2px;}
 .item-en{font-weight:bold;font-size:13px;color:#2c1810;margin-bottom:6px;min-height:1.2em;}
@@ -100,7 +100,8 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
 .co-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
 .co-preset-btn{padding:8px 4px;border:1px solid #ddd;border-radius:7px;background:#fff;font-size:12px;font-weight:bold;color:var(--info);cursor:pointer;text-align:center;}
 .co-preset-btn:active{background:#e8f4ff;}
-.co-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:185px;flex-shrink:0;box-sizing:border-box;}
+.co-left{display:flex;flex-direction:column;min-width:155px;max-width:220px;border-right:1px solid #eee;background:#fff;overflow:hidden;}
+.co-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;flex:1;box-sizing:border-box;}
 .co-num{padding:12px 0;border:1px solid #ddd;border-radius:9px;background:#fff;font-size:22px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s;}
 .co-num:active{transform:scale(0.91);background:#f0f0f0;}
 .co-num-zero{grid-column:span 2;}
@@ -111,7 +112,7 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
 .co-receipt-col .co-r-btn{flex:1;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;padding:0 8px;}
 .co-r-btn{padding:10px 8px;border:1px solid #ddd;border-radius:9px;background:#fff;color:#999;font-size:14px;font-weight:bold;cursor:pointer;}
 .co-r-btn.co-r-active{border-color:var(--primary);background:#fff0f2;color:var(--primary);}
-.co-confirm-btn{width:100%;padding:16px;border:none;border-radius:14px;background:var(--green);color:#fff;font-size:17px;font-weight:bold;cursor:pointer;flex-shrink:0;box-shadow:0 4px 10px rgba(39,174,96,0.3);letter-spacing:0.05em;}
+.co-confirm-btn{width:100%;padding:16px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:17px;font-weight:bold;cursor:pointer;flex-shrink:0;box-shadow:0 4px 10px rgba(232,160,0,0.3);letter-spacing:0.05em;}
 .co-confirm-btn:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;}
 .co-confirm-btn:active:not(:disabled){transform:scale(0.98);}
 </style>
@@ -257,22 +258,21 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
 <!-- 会計確定（三船POS準拠・新UI） -->
 <div id="view-checkout" class="view">
   <header>
-    <div class="header-left"><span class="back-btn" onclick="showOrderHistory()">＜</span><span>Checkout</span></div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-      <div style="font-size:13px;color:#ffd;font-weight:bold;" id="co-table-label"></div>
-      <div style="font-size:11px;color:#ffc;" id="co-info-label"></div>
-    </div>
+    <div class="header-left"><span class="back-btn" onclick="showOrderHistory()">＜</span><span id="co-table-label" style="font-weight:bold;"></span></div>
+    <span id="co-info-label" style="font-size:12px;color:#ffc;"></span>
   </header>
+  <!-- hidden: JS参照用 -->
+  <div id="co-items-list" style="display:none;"></div>
+  <span id="co-subtotal-l" style="display:none;"></span>
+  <span id="co-tax-l" style="display:none;"></span>
+  <span id="co-grand-total-l" style="display:none;"></span>
   <div class="co-body">
-    <!-- 操作パネル（全幅） -->
+    <!-- 支払い操作（全幅） -->
     <div class="co-right" style="flex:1;max-width:100%;">
-      <!-- hidden: co-items-list / co-grand-total はJS用に非表示で保持 -->
-      <div id="co-items-list" style="display:none;"></div>
-      <span id="co-grand-total" style="display:none;"></span>
-      <!-- 合計金額バナー -->
+      <!-- 合計バナー -->
       <div style="background:#fff;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);flex-shrink:0;">
-        <div style="font-size:12px;color:#999;font-weight:bold;">TOTAL</div>
-        <div id="co-grand-total-banner" style="font-size:30px;font-weight:bold;color:var(--primary);font-family:monospace;">¥0</div>
+        <div style="font-size:12px;color:#999;font-weight:bold;">TOTAL (incl. tax)</div>
+        <div id="co-grand-total" style="font-size:30px;font-weight:bold;color:var(--primary);font-family:monospace;">¥0</div>
       </div>
       <!-- Eat In / Takeout -->
       <div class="co-section-label">ORDER TYPE</div>
@@ -300,7 +300,6 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
             <div class="co-amount-val green" id="co-change-val">¥ ―</div>
           </div>
         </div>
-        <div class="co-presets" id="co-presets"></div>
         <div style="display:flex;gap:8px;align-items:stretch;">
           <div class="co-numpad">
             <button class="co-num" onclick="coNum('7')">7</button>
@@ -315,10 +314,11 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
             <button class="co-num co-num-zero" onclick="coNum('0')">0</button>
             <button class="co-num co-num-del" onclick="coDel()">⌫</button>
           </div>
-          <div class="co-receipt-col" style="width:90px;flex-shrink:0;">
-            <button id="co-r-none"    class="co-r-btn"             onclick="setCoReceipt('none')">None</button>
-            <button id="co-r-receipt" class="co-r-btn co-r-active" onclick="setCoReceipt('receipt')">🧾<br>Receipt</button>
-            <button id="co-r-ryoshu"  class="co-r-btn"             onclick="setCoReceipt('ryoshu')">📄<br>Invoice</button>
+          <div style="display:flex;flex-direction:column;gap:6px;width:300px;flex-shrink:0;">
+            <button class="co-num" style="flex:1;font-size:13px;font-weight:bold;" onclick="coSetPreset(1000)">¥1,000</button>
+            <button class="co-num" style="flex:1;font-size:13px;font-weight:bold;" onclick="coSetPreset(2000)">¥2,000</button>
+            <button class="co-num" style="flex:1;font-size:13px;font-weight:bold;" onclick="coSetPreset(5000)">¥5,000</button>
+            <button class="co-num" style="flex:1;font-size:13px;font-weight:bold;" onclick="coSetPreset(10000)">¥10,000</button>
           </div>
         </div>
       </div>
@@ -326,6 +326,12 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
       <div id="co-noncash-panel" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#999;text-align:center;font-size:14px;">
         <div id="co-noncash-icon" style="font-size:40px;"></div>
         <div id="co-noncash-msg"></div>
+      </div>
+      <!-- レシート選択: 支払方法に関わらず常時表示 -->
+      <div style="display:flex;gap:8px;">
+        <button id="co-r-none"    class="co-r-btn"             onclick="setCoReceipt('none')"    style="flex:1;padding:14px 0;font-size:14px;border-radius:10px;">None</button>
+        <button id="co-r-receipt" class="co-r-btn co-r-active" onclick="setCoReceipt('receipt')" style="flex:1;padding:14px 0;font-size:14px;border-radius:10px;">🧾 Receipt</button>
+        <button id="co-r-ryoshu"  class="co-r-btn"             onclick="setCoReceipt('ryoshu')"  style="flex:1;padding:14px 0;font-size:14px;border-radius:10px;">📄 Invoice</button>
       </div>
       <!-- 確定ボタン -->
       <button class="co-confirm-btn" id="co-confirm-btn" onclick="payCo()" disabled>Enter amount</button>
@@ -360,7 +366,7 @@ footer{width:100%;display:flex;flex-direction:column;z-index:100;box-shadow:0 -3
   <div class="report-btns">
     <button class="btn-report" onclick="printReport('day')">Daily Report</button>
     <button class="btn-report" onclick="printReport('month')" style="background:var(--accent);">Monthly</button>
-    <button class="btn-report" onclick="exportCSV()" style="background:#8e44ad;">CSV</button>
+    <button class="btn-report" onclick="exportSenseiDate()" style="background:#27ae60;">SENSEI DATE</button>
   </div>
   <div class="list-container" id="sales-list" style="background:#f4f4f4;padding:5px 0;"></div>
 </div>
@@ -764,18 +770,18 @@ function renderItems(){
     }else{
       // 数量＋/－コントロール
       var qtyWrap=document.createElement('div');
-      qtyWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-top:6px;';
+      qtyWrap.style.cssText='display:flex;align-items:center;gap:4px;margin-top:6px;';
       var btnM=document.createElement('button');
-      btnM.style.cssText='width:36px;height:36px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      btnM.style.cssText='width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       btnM.innerText='−';
       var qtyEl=document.createElement('div');
-      qtyEl.style.cssText='font-size:18px;font-weight:bold;min-width:24px;text-align:center;';
+      qtyEl.style.cssText='font-size:16px;font-weight:bold;min-width:20px;text-align:center;';
       qtyEl.innerText='1';
       var btnP=document.createElement('button');
-      btnP.style.cssText='width:36px;height:36px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:20px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      btnP.style.cssText='width:30px;height:30px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       btnP.innerText='+';
       var btnAdd=document.createElement('button');btnAdd.className='btn-add';
-      btnAdd.style.cssText='flex:1;';btnAdd.innerText='Add';
+      btnAdd.style.cssText='flex:1;min-width:44px;';btnAdd.innerText='Add';
       btnM.onclick=function(e){e.stopPropagation();var v=parseInt(qtyEl.innerText);if(v>1)qtyEl.innerText=v-1;};
       btnP.onclick=function(e){e.stopPropagation();var v=parseInt(qtyEl.innerText);qtyEl.innerText=v+1;};
       (function(it,qe){btnAdd.onclick=function(){
@@ -1561,25 +1567,24 @@ function showCheckout() {
   var c = localStorage.getItem('checkin_' + currentTable) || '--:--';
   document.getElementById('co-table-label').textContent = currentTable;
   document.getElementById('co-info-label').textContent = 'In: ' + c + ' / ' + g + ' pax';
-  var total = 0;
+  var sub = 0, tax = 0;
   document.getElementById('co-items-list').innerHTML = hist.map(function(i) {
-    var lp = Math.floor(i.price * i.qty * (1 + i.rate));
-    total += lp;
+    var lp = i.price * i.qty, lt = Math.floor(lp * i.rate);
+    sub += lp; tax += lt;
     return '<div class="co-item-row"><div class="co-item-qty">' + i.qty + '</div>' +
-      '<div class="co-item-name">' + i.en + '</div>' +
-      '<div class="co-item-price">¥' + lp.toLocaleString() + '</div></div>';
+      '<div class="co-item-name">' + (i.en || i.ja || i.name || '') + '</div>' +
+      '<div class="co-item-price">¥' + (lp + lt).toLocaleString() + '</div></div>';
   }).join('') || '<p style="text-align:center;padding:30px;color:#bbb;">No orders</p>';
+  var total = sub + tax;
+  document.getElementById('co-subtotal-l').textContent = '¥' + sub.toLocaleString();
+  document.getElementById('co-tax-l').textContent = '¥' + tax.toLocaleString();
+  document.getElementById('co-grand-total-l').textContent = '¥' + total.toLocaleString();
   document.getElementById('co-grand-total').textContent = '¥' + total.toLocaleString();
-  document.getElementById('co-grand-total-banner').textContent = '¥' + total.toLocaleString();
-  // TOはデフォルトでテイクアウト
   setEatIn(currentTable !== 'TO');
   coReceivedStr = '';
   coReceiptMode = 'receipt';
   setCoReceipt('receipt');
   selectPayment('Cash');
-  document.getElementById('co-presets').innerHTML = [1000, 2000, 5000, 10000].map(function(v) {
-    return '<button class="co-preset-btn" onclick="coSetPreset(' + v + ')">¥' + v.toLocaleString() + '</button>';
-  }).join('');
   showView('view-checkout');
 }
 
@@ -1726,6 +1731,10 @@ function printKitchen(){sendToKitchen();}
 
 // ---- 領収書 ----
 function openRyoshuusho(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var sub=0,tax=0;
+  hist.forEach(function(i){var s=i.price*i.qty,t=Math.floor(s*(i.rate||0));sub+=s;tax+=t;});
+  window._ryoshuTotal={sub:sub,tax:tax,total:sub+tax};
   document.getElementById('ryoshuusho-atena').value='';
   document.getElementById('ryoshuusho-tadashi').value='For dining';
   updateRyoshuushoPreview();
@@ -1733,9 +1742,9 @@ function openRyoshuusho(){
 }
 function closeRyoshuusho(){document.getElementById('overlay-ryoshuusho').style.display='none';}
 function getRyoshuushoTotal(){
+  if(window._ryoshuTotal)return window._ryoshuTotal;
   var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
-  var total=0;
-  hist.forEach(function(i){total+=i.price*i.qty;});
+  var total=0;hist.forEach(function(i){total+=i.price*i.qty;});
   return{total:total};
 }
 function updateRyoshuushoPreview(){
@@ -1760,8 +1769,35 @@ async function printRyoshuusho(){
   var t=getRyoshuushoTotal();
   var now=new Date();
   var dateStr=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate();
-  if(window._saveSaleToCloud)await window._saveSaleToCloud(currentTable,currentPaymentMethod,!coIsEatIn);
+  // 1. 領収書印刷のみ（売上保存・終了はまだしない）
   await window.queuePrint({type:'ryoshuusho',atena:atena,tadashi:tadashi,total:t.total,dateStr:dateStr});
+  // 2. モーダルをレシート選択画面に切り替え
+  var modal=document.querySelector('#overlay-ryoshuusho .modal');
+  modal.innerHTML=
+    '<div style="font-weight:bold;font-size:18px;margin-bottom:8px;">✅ Invoice Printed</div>'+
+    '<div style="font-size:14px;color:#666;margin-bottom:20px;">Also print a receipt?</div>'+
+    '<button onclick="finishWithReceipt()" style="width:100%;padding:16px;margin-bottom:10px;background:var(--primary);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:bold;cursor:pointer;">🧾 Print Receipt</button>'+
+    '<button onclick="finishNoReceipt()" style="width:100%;padding:16px;background:#eee;color:#666;border:none;border-radius:14px;font-size:16px;font-weight:bold;cursor:pointer;">No Receipt</button>';
+}
+async function finishWithReceipt(){
+  var hist=[];try{hist=JSON.parse(localStorage.getItem('history_'+currentTable)||'[]');}catch(e){}
+  var g=localStorage.getItem('guests_'+currentTable);
+  var c=localStorage.getItem('checkin_'+currentTable);
+  if(window._saveSaleToCloud)await window._saveSaleToCloud(currentTable,currentPaymentMethod,!coIsEatIn);
+  await window.queuePrint({
+    type:'receipt',tableNo:currentTable,guests:g,checkinTime:c,
+    items:hist.map(function(i){return{name:i.ja||i.en||i.name,qty:i.qty,price:i.price,rate:i.rate||0};}),
+    paymentMethod:currentPaymentMethod,
+    cashReceived:currentPaymentMethod==='Cash'?parseInt(coReceivedStr||'0'):0,
+    orderTime:new Date().toLocaleString('ja-JP')
+  });
+  _finishCheckout();
+}
+async function finishNoReceipt(){
+  if(window._saveSaleToCloud)await window._saveSaleToCloud(currentTable,currentPaymentMethod,!coIsEatIn);
+  _finishCheckout();
+}
+function _finishCheckout(){
   closeRyoshuusho();
   localStorage.removeItem('history_'+currentTable);
   localStorage.removeItem('guests_'+currentTable);
@@ -1775,6 +1811,7 @@ function showAdmin(mode){if(window._showAdmin)window._showAdmin(mode);else alert
 function logoutOwner(){if(window._logoutOwner)window._logoutOwner();}
 function handleLogin(){if(window._handleLogin)window._handleLogin();}
 function exportCSV(){if(window._exportCSV)window._exportCSV();}
+function exportSenseiDate(){if(window._exportSenseiDate)window._exportSenseiDate();}
 function printReport(m){if(window._printReport)window._printReport(m);}
 
 renderIndex();
@@ -1864,24 +1901,37 @@ window._showAdmin=async function(mode){
   var list=document.getElementById('sales-list');
   list.innerHTML='<p style="text-align:center;padding:50px;">Loading...</p>';
   var allSales=await window.getSalesData();
+  // 月別セレクター生成
   if(mode==='month'||mode==='dates'||mode==='dow'||mode==='menu'){
     var monthSet={};
-    allSales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');monthSet[k]=d.getFullYear()+'/'+(d.getMonth()+1);});
+    allSales.forEach(function(s){
+      var d=s.timestamp.toDate();
+      var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      var label=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+      monthSet[k]=label;
+    });
     var sel=document.getElementById('month-selector');var curVal=sel.value;
     var now2=new Date();var defKey=now2.getFullYear()+'-'+String(now2.getMonth()+1).padStart(2,'0');
-    sel.innerHTML=Object.keys(monthSet).sort().reverse().map(function(k){return '<option value="'+k+'" '+((curVal||defKey)===k?'selected':'')+'>'+monthSet[k]+'</option>';}).join('');
+    sel.innerHTML=Object.keys(monthSet).sort().reverse().map(function(k){
+      return '<option value="'+k+'" '+((curVal||defKey)===k?'selected':'')+'>'+monthSet[k]+'</option>';
+    }).join('');
   }
   var now=new Date();
   function getSelYM(){return document.getElementById('month-selector').value.split('-').map(Number);}
   var sales;
-  if(mode==='month'||mode==='dates'||mode==='dow'){var ym=getSelYM();sales=allSales.filter(function(s){var d=s.timestamp.toDate();return d.getFullYear()===ym[0]&&d.getMonth()+1===ym[1];});}
-  else if(mode==='day'){sales=allSales.filter(function(s){return s.timestamp.toDate().toDateString()===now.toDateString();});}
-  else{sales=allSales;}
+  if(mode==='month'||mode==='dates'||mode==='dow'){
+    var ym=getSelYM();
+    sales=allSales.filter(function(s){var d=s.timestamp.toDate();return d.getFullYear()===ym[0]&&d.getMonth()+1===ym[1];});
+  }else if(mode==='day'){
+    sales=allSales.filter(function(s){return s.timestamp.toDate().toDateString()===now.toDateString();});
+  }else{sales=allSales;}
   var total=0,guests=0;
   if(mode==='day'){
-    var cards=sales.map(function(s){total+=s.total;guests+=s.guests;
+    var cards=sales.map(function(s){
+      total+=s.total;guests+=s.guests;
       var sJson=JSON.stringify(s).replace(/"/g,'&quot;');
-      return '<div class="sale-card" onclick="showSaleDetail('+sJson+')" style="cursor:pointer;"><div class="sale-time-row"><span class="sale-time">'+s.checkout+'</span><span class="sale-table-badge">'+s.tableId+'</span></div>'+
+      return '<div class="sale-card" onclick="showSaleDetail('+sJson+')" style="cursor:pointer;">'+
+        '<div class="sale-time-row"><span class="sale-time">'+s.checkout+'</span><span class="sale-table-badge">'+s.tableId+'</span></div>'+
         '<div class="sale-detail-info">Guests: '+s.guests+' / In: '+s.checkin+' / '+(s.paymentMethod||'Cash')+'</div>'+
         '<div class="sale-total-line"><span class="sale-price-big">¥'+s.total.toLocaleString()+'</span>'+
         (window._fbCurrentUser?'<button class="btn-del-sale" onclick="window._delSale(\''+s.id+'\')">Delete</button>':'')+
@@ -1890,16 +1940,22 @@ window._showAdmin=async function(mode){
     list.innerHTML=cards;
   }else if(mode==='dates'){
     var dayMap={};
-    sales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    sales.forEach(function(s){
+      var d=s.timestamp.toDate();
+      var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+      var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
       var label=k+'（'+dow+'）';
       if(!dayMap[label])dayMap[label]={label:label,t:0,c:0,g:0,ts:d.getTime(),ids:[],pay:{}};
       dayMap[label].t+=s.total;dayMap[label].c++;dayMap[label].g+=s.guests;dayMap[label].ids.push(s.id);
-      var pm=s.paymentMethod||'Cash';dayMap[label].pay[pm]=(dayMap[label].pay[pm]||0)+s.total;total+=s.total;guests+=s.guests;
+      var pm=s.paymentMethod||'Cash';
+      dayMap[label].pay[pm]=(dayMap[label].pay[pm]||0)+s.total;
+      total+=s.total;guests+=s.guests;
     });
     window._dayDeleteMap=dayMap;
     list.innerHTML=Object.values(dayMap).sort(function(a,b){return b.ts-a.ts;}).map(function(s){
       var pd=Object.entries(s.pay).map(function(kv){return kv[0]+': ¥'+kv[1].toLocaleString();}).join(' / ');
-      return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div>'+
+      return '<div class="sale-card">'+
+        '<div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div>'+
         '<div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div>'+
         '<div class="sale-detail-info" style="color:#888;font-size:12px;">'+pd+'</div>'+
         '<div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span>'+
@@ -1910,38 +1966,69 @@ window._showAdmin=async function(mode){
     var labels=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var stats=labels.map(function(l){return{l:l,t:0,c:0,g:0};});
     sales.forEach(function(s){var dow=s.timestamp.toDate().getDay();stats[dow].t+=s.total;stats[dow].c++;stats[dow].g+=s.guests;total+=s.total;guests+=s.guests;});
-    list.innerHTML=stats.map(function(s){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time">'+s.l+'</span></div><div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';}).join('');
+    list.innerHTML=stats.map(function(s){
+      return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time">'+s.l+'</span></div>'+
+        '<div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div>'+
+        '<div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';
+    }).join('');
   }else if(mode==='month'){
     var dm2={};
-    sales.forEach(function(s){var d=s.timestamp.toDate();var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+    sales.forEach(function(s){
+      var d=s.timestamp.toDate();
+      var k=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+      var dow=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
       if(!dm2[k])dm2[k]={label:k+'（'+dow+'）',t:0,c:0,g:0,ts:d.getTime()};
       dm2[k].t+=s.total;dm2[k].c++;dm2[k].g+=s.guests;total+=s.total;guests+=s.guests;
     });
-    list.innerHTML=Object.values(dm2).sort(function(a,b){return b.ts-a.ts;}).map(function(s){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div><div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';}).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
+    list.innerHTML=Object.values(dm2).sort(function(a,b){return b.ts-a.ts;}).map(function(s){
+      return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:15px;">'+s.label+'</span></div>'+
+        '<div class="sale-detail-info">Orders: '+s.c+' / Guests: '+s.g+'</div>'+
+        '<div class="sale-total-line"><span class="sale-price-big">¥'+s.t.toLocaleString()+'</span></div></div>';
+    }).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
   }else if(mode==='menu'){
     var ym2=getSelYM();
     var ms=allSales.filter(function(s){var d=s.timestamp.toDate();return d.getFullYear()===ym2[0]&&d.getMonth()+1===ym2[1];});
     var im={};
-    ms.forEach(function(s){total+=s.total;guests+=s.guests;(s.items||[]).forEach(function(item){var name=item.ja||item.name||'?';if(!im[name])im[name]={qty:0,amount:0};im[name].qty+=item.qty;im[name].amount+=item.price*item.qty;});});
-    list.innerHTML='<div style="padding:12px 15px;background:#f8f8f8;font-size:13px;color:#666;border-bottom:1px solid #eee;">📅 '+ym2[0]+'/'+ym2[1]+' — Sales by Item (by qty)</div>'+
-      Object.entries(im).sort(function(a,b){return b[1].qty-a[1].qty;}).map(function(kv,i){return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:14px;">'+(i+1)+'. '+kv[0]+'</span></div><div class="sale-detail-info">Qty: '+kv[1].qty+'</div><div class="sale-total-line"><span class="sale-price-big">¥'+kv[1].amount.toLocaleString()+'</span></div></div>';}).join('')||'<p style="text-align:center;padding:50px;">No data</p>';
+    ms.forEach(function(s){
+      total+=s.total;guests+=s.guests;
+      (s.items||[]).forEach(function(item){
+        var name=item.en||item.ja||item.name||'?';
+        if(!im[name])im[name]={qty:0,amount:0};
+        im[name].qty+=item.qty;
+        im[name].amount+=Math.floor(item.price*item.qty*(1+(item.rate||0)));
+      });
+    });
+    var monthLabel=ym2[0]+'/'+ym2[1];
+    list.innerHTML='<div style="padding:12px 15px;background:#f8f8f8;font-size:13px;color:#666;border-bottom:1px solid #eee;">📅 '+monthLabel+' — Sales by Item (by qty)</div>'+
+      (Object.entries(im).sort(function(a,b){return b[1].qty-a[1].qty;}).map(function(kv,i){
+        return '<div class="sale-card"><div class="sale-time-row"><span class="sale-time" style="font-size:14px;">'+(i+1)+'. '+kv[0]+'</span></div>'+
+          '<div class="sale-detail-info">Qty: '+kv[1].qty+'</div>'+
+          '<div class="sale-total-line"><span class="sale-price-big">¥'+kv[1].amount.toLocaleString()+'</span></div></div>';
+      }).join('')||'<p style="text-align:center;padding:50px;">No data</p>');
     document.getElementById('sum-count').innerText=ms.length;
   }
   document.getElementById('sum-total').innerText=total.toLocaleString();
   document.getElementById('sum-guests').innerText=guests;
   if(mode!=='menu')document.getElementById('sum-count').innerText=sales.length;
+  // Eat In / Takeout 内訳
   var typeArea=document.getElementById('sales-type-summary-area');
   if(mode!=='menu'&&mode!=='dow'){
     var tm={'Eat In':0,'Takeout':0};
     sales.forEach(function(s){if(s.tableId==='TO')tm['Takeout']+=s.total;else tm['Eat In']+=s.total;});
-    typeArea.innerHTML=Object.entries(tm).map(function(kv){return '<span style="background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';}).join('');
+    typeArea.innerHTML=Object.entries(tm).map(function(kv){
+      return '<span style="background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';
+    }).join('');
     typeArea.style.display='flex';
   }else{typeArea.style.display='none';}
+  // 決済種別内訳
   var payArea=document.getElementById('payment-summary-area');
   if(mode!=='menu'&&mode!=='dow'){
-    var pm={};sales.forEach(function(s){var p=s.paymentMethod||'Cash';if(!pm[p])pm[p]=0;pm[p]+=s.total;});
-    payArea.innerHTML=Object.entries(pm).map(function(kv){return '<span style="background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';}).join('');
-    payArea.style.display='flex';
+    var pm2={};
+    sales.forEach(function(s){var p=s.paymentMethod||'Cash';if(!pm2[p])pm2[p]=0;pm2[p]+=s.total;});
+    payArea.innerHTML=Object.entries(pm2).map(function(kv){
+      return '<span style="background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:10px;">'+kv[0]+': ¥'+kv[1].toLocaleString()+'</span>';
+    }).join('');
+    payArea.style.display=Object.keys(pm2).length>0?'flex':'none';
   }else{payArea.style.display='none';}
 };
 window._delSale=async function(id){if(!confirm('消去しますか？'))return;await deleteDoc(doc(db,'stores/'+SID+'/sales',id));setTimeout(function(){window._showAdmin('day');},500);};
@@ -2032,6 +2119,40 @@ window._printReport=async function(mode){
     await window.queuePrint({type:'report-month',yearMonth:ym[0]+'/'+ym[1],total:mtotal,guests:mguests,count:msales.length,dailyBreakdown:breakdown});
     alert('Sent to printer');
   }
+};
+window._exportSenseiDate=async function(){
+  var now=new Date();
+  var options=[];
+  for(var i=-11;i<=0;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var label=d.getFullYear()+'年'+(d.getMonth()+1)+'月';
+    options.push({key:key,label:label});
+  }
+  var chosen=await showPickerModal('SENSEI DATE - 対象月を選択',options.reverse());
+  if(!chosen)return;
+  var ym=chosen.split('-').map(Number);
+  var allSales=await window.getSalesData();
+  var sales=allSales.filter(function(s){
+    var d=s.timestamp.toDate();
+    return d.getFullYear()===ym[0]&&d.getMonth()+1===ym[1];
+  }).sort(function(a,b){return a.timestamp-b.timestamp;});
+  if(sales.length===0)return alert('No data');
+  // SENSEI DATE形式: 日付,金額,支払方法,席,客数
+  var header='Date,Total,Payment,Table,Guests';
+  var rows=sales.map(function(s){
+    var d=s.timestamp.toDate();
+    var dateStr=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+    var pm=s.paymentMethod||'Cash';
+    return '"'+dateStr+'",'+s.total+',"'+pm+'","'+s.tableId+'",'+(s.guests||0);
+  });
+  var csv='\uFEFF'+header+'\n'+rows.join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='juntara_senseidate_'+ym[0]+'年'+ym[1]+'月.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
 };
 console.log('✅ Firebase (juntara)');
 }catch(e){console.warn('⚠️ Firebase error:',e.message);}
